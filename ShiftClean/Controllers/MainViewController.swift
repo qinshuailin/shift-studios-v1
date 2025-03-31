@@ -3,11 +3,12 @@ import SwiftUI
 import FamilyControls
 import ManagedSettings
 
-class MainViewController: UIViewController {
+class MainViewController: UIViewController, NFCControllerDelegate {
 
     private let appBlockingModel = AppBlockingModel.shared
     private let toggleButton = UIButton(type: .system)
     private let settingsButton = UIButton(type: .system)
+    private let nfcButton = UIButton(type: .system)
     private let statusLabel = UILabel()
 
     override func viewDidLoad() {
@@ -17,15 +18,18 @@ class MainViewController: UIViewController {
         requestScreenTimePermission()
         view.backgroundColor = .white
         setupUI()
+
+        // Set NFC delegate
+        NFCController.shared.delegate = self
     }
 
     private func requestScreenTimePermission() {
         Task {
             do {
                 try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                print("✅ Screen Time authorization granted")
+                print("Screen Time authorization granted")
             } catch {
-                print("❌ Screen Time authorization failed: \(error.localizedDescription)")
+                print("Screen Time authorization failed: \(error.localizedDescription)")
             }
         }
     }
@@ -59,6 +63,16 @@ class MainViewController: UIViewController {
         settingsButton.addTarget(self, action: #selector(settingsButtonTapped), for: .touchUpInside)
         view.addSubview(settingsButton)
 
+        // NFC Button
+        nfcButton.translatesAutoresizingMaskIntoConstraints = false
+        nfcButton.setTitle("TAP NFC TAG", for: .normal)
+        nfcButton.setTitleColor(.white, for: .normal)
+        nfcButton.backgroundColor = .systemOrange
+        nfcButton.layer.cornerRadius = 8
+        nfcButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+        nfcButton.addTarget(self, action: #selector(scanNFC), for: .touchUpInside)
+        view.addSubview(nfcButton)
+
         // Constraints
         NSLayoutConstraint.activate([
             statusLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 80),
@@ -72,14 +86,19 @@ class MainViewController: UIViewController {
             settingsButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             settingsButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             settingsButton.widthAnchor.constraint(equalToConstant: 200),
-            settingsButton.heightAnchor.constraint(equalToConstant: 50)
+            settingsButton.heightAnchor.constraint(equalToConstant: 50),
+
+            nfcButton.bottomAnchor.constraint(equalTo: settingsButton.topAnchor, constant: -20),
+            nfcButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            nfcButton.widthAnchor.constraint(equalToConstant: 200),
+            nfcButton.heightAnchor.constraint(equalToConstant: 50)
         ])
     }
 
     @objc private func toggleFocusMode() {
         AppBlockingManager.shared.toggleFocusMode()
-        let isActive = AppBlockingManager.shared.isFocusModeActive()
-        statusLabel.text = isActive ? "FOCUS MODE ON" : "FOCUS MODE OFF"
+        updateStatusLabel()
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
     @objc private func settingsButtonTapped() {
@@ -101,5 +120,18 @@ class MainViewController: UIViewController {
 
         let controller = UIHostingController(rootView: wrappedPicker)
         present(controller, animated: true)
+    }
+
+    @objc private func scanNFC() {
+        NFCController.shared.beginScanning()
+    }
+
+    func didToggleFocusMode() {
+        updateStatusLabel()
+    }
+
+    private func updateStatusLabel() {
+        let isActive = AppBlockingManager.shared.isFocusModeActive()
+        statusLabel.text = isActive ? "FOCUS MODE ON" : "FOCUS MODE OFF"
     }
 }
