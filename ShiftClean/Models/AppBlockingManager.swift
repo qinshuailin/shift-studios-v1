@@ -1,46 +1,66 @@
-import UIKit
-import FamilyControls
+import Foundation
 import ManagedSettings
+import FamilyControls
 
 class AppBlockingManager {
-
     static let shared = AppBlockingManager()
 
     private let store = ManagedSettingsStore()
-    private let center = AuthorizationCenter.shared
-    private var focusMode = false
+    private var currentTokens = Set<ApplicationToken>()
+    private var focusModeActive = false
 
-    // Apps to block when in focus mode
-    private var appsToBlock = Set<ApplicationToken>()
+    // In-memory counter for the current session
+    private(set) var sessionBlockCount: Int = 0
+    // Captured count at the end of the session (for the popup)
+    private(set) var lastSessionBlockCount: Int = 0
 
-    func requestAuthorization() async {
-        do {
-            try await center.requestAuthorization(for: .individual)
-            print("Authorization successful")
-        } catch {
-            print("Failed to authorize: \(error.localizedDescription)")
+    func setAppsToBlock(_ selection: FamilyActivitySelection) {
+        currentTokens = selection.applicationTokens
+        if focusModeActive {
+            store.shield.applications = currentTokens.isEmpty ? nil : currentTokens
         }
     }
 
-    func setAppsToBlock(_ selection: FamilyActivitySelection) {
-        self.appsToBlock = selection.applicationTokens
-    }
-
     func toggleFocusMode() {
-        focusMode.toggle()
+        focusModeActive.toggle()
 
-        if focusMode {
-            // Enable blocking
-            store.shield.applications = appsToBlock
-            store.shield.applicationCategories = .all() // Optional: add if you want to block all categories
-        } else {
-            // Disable blocking
+        if focusModeActive {
+            // Start a new session: reset counter
+            sessionBlockCount = 0
+            // Apply blocking with a slight delay
             store.shield.applications = nil
-            store.shield.applicationCategories = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.store.shield.applications = self.currentTokens.isEmpty ? nil : self.currentTokens
+            }
+        } else {
+            // End session: capture final count
+            lastSessionBlockCount = sessionBlockCount
+            store.shield.applications = nil
+            // Reset session counter for next session
+            sessionBlockCount = 0
         }
     }
 
     func isFocusModeActive() -> Bool {
-        return focusMode
+        return focusModeActive
+    }
+
+    // Call this each time a blocked app is attempted (from your NFC or other triggers)
+    func incrementBlockCount() {
+        guard focusModeActive else { return }
+        sessionBlockCount += 1
+        print("Incremented sessionBlockCount to \(sessionBlockCount)")
+    }
+
+    func getLastSessionCount() -> Int {
+        return lastSessionBlockCount
+    }
+
+    func resetAllBlocking() {
+        store.shield.applications = nil
+        currentTokens.removeAll()
+        focusModeActive = false
+        sessionBlockCount = 0
+        lastSessionBlockCount = 0
     }
 }

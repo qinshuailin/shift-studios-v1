@@ -4,7 +4,6 @@ import FamilyControls
 import ManagedSettings
 
 class MainViewController: UIViewController, NFCControllerDelegate {
-
     private let appBlockingModel = AppBlockingModel.shared
     private let toggleButton = UIButton(type: .system)
     private let settingsButton = UIButton(type: .system)
@@ -18,8 +17,6 @@ class MainViewController: UIViewController, NFCControllerDelegate {
         requestScreenTimePermission()
         view.backgroundColor = .white
         setupUI()
-
-        // Set NFC delegate
         NFCController.shared.delegate = self
     }
 
@@ -35,7 +32,6 @@ class MainViewController: UIViewController, NFCControllerDelegate {
     }
 
     private func setupUI() {
-        // Status Label
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         statusLabel.text = "FOCUS MODE OFF"
         statusLabel.textColor = .black
@@ -43,7 +39,6 @@ class MainViewController: UIViewController, NFCControllerDelegate {
         statusLabel.textAlignment = .center
         view.addSubview(statusLabel)
 
-        // Toggle Button
         toggleButton.translatesAutoresizingMaskIntoConstraints = false
         toggleButton.setTitle("TOGGLE FOCUS MODE", for: .normal)
         toggleButton.setTitleColor(.white, for: .normal)
@@ -53,7 +48,6 @@ class MainViewController: UIViewController, NFCControllerDelegate {
         toggleButton.addTarget(self, action: #selector(toggleFocusMode), for: .touchUpInside)
         view.addSubview(toggleButton)
 
-        // Settings Button
         settingsButton.translatesAutoresizingMaskIntoConstraints = false
         settingsButton.setTitle("SELECT APPS", for: .normal)
         settingsButton.setTitleColor(.white, for: .normal)
@@ -63,7 +57,6 @@ class MainViewController: UIViewController, NFCControllerDelegate {
         settingsButton.addTarget(self, action: #selector(settingsButtonTapped), for: .touchUpInside)
         view.addSubview(settingsButton)
 
-        // NFC Button
         nfcButton.translatesAutoresizingMaskIntoConstraints = false
         nfcButton.setTitle("TAP NFC TAG", for: .normal)
         nfcButton.setTitleColor(.white, for: .normal)
@@ -73,7 +66,6 @@ class MainViewController: UIViewController, NFCControllerDelegate {
         nfcButton.addTarget(self, action: #selector(scanNFC), for: .touchUpInside)
         view.addSubview(nfcButton)
 
-        // Constraints
         NSLayoutConstraint.activate([
             statusLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 80),
             statusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -96,8 +88,38 @@ class MainViewController: UIViewController, NFCControllerDelegate {
     }
 
     @objc private func toggleFocusMode() {
+        let wasActive = AppBlockingManager.shared.isFocusModeActive()
         AppBlockingManager.shared.toggleFocusMode()
         updateStatusLabel()
+
+        if wasActive {
+            // Ending focus mode session
+            let defaults = UserDefaults(suiteName: "group.com.ericqin.shift")
+            let sessionCount = defaults?.integer(forKey: "focusBlockCount") ?? 0
+            defaults?.set(sessionCount, forKey: "lastSessionBlockCount")
+            defaults?.set(0, forKey: "focusBlockCount")
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                let message = "You tried to open blocked apps \(sessionCount) time\(sessionCount == 1 ? "" : "s")."
+                let alert = UIAlertController(title: "Session Ended", message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                self.present(alert, animated: true)
+            }
+        } else {
+            // Starting new session
+            UserDefaults(suiteName: "group.com.ericqin.shift")?.set(0, forKey: "focusBlockCount")
+
+            let alert = UIAlertController(
+                title: "Focus Mode Activated",
+                message: "Blocked apps will now be restricted.",
+                preferredStyle: .alert
+            )
+            self.present(alert, animated: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                alert.dismiss(animated: true)
+            }
+        }
+
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
@@ -112,10 +134,14 @@ class MainViewController: UIViewController, NFCControllerDelegate {
 
         let wrappedPicker = NavigationView {
             picker
-                .navigationBarTitle("Select Apps", displayMode: .inline)
-                .navigationBarItems(trailing: Button("Done") {
-                    self.dismiss(animated: true)
-                })
+                .navigationTitle("Select Apps")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            self.dismiss(animated: true)
+                        }
+                    }
+                }
         }
 
         let controller = UIHostingController(rootView: wrappedPicker)
