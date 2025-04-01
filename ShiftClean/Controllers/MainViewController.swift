@@ -58,7 +58,7 @@ class MainViewController: UIViewController, NFCControllerDelegate {
         view.addSubview(settingsButton)
 
         nfcButton.translatesAutoresizingMaskIntoConstraints = false
-        nfcButton.setTitle("TAP NFC TAG", for: .normal)
+        nfcButton.setTitle("TAP SHIFT TAG", for: .normal)
         nfcButton.setTitleColor(.white, for: .normal)
         nfcButton.backgroundColor = .systemOrange
         nfcButton.layer.cornerRadius = 8
@@ -88,38 +88,8 @@ class MainViewController: UIViewController, NFCControllerDelegate {
     }
 
     @objc private func toggleFocusMode() {
-        let wasActive = AppBlockingManager.shared.isFocusModeActive()
         AppBlockingManager.shared.toggleFocusMode()
         updateStatusLabel()
-
-        if wasActive {
-            // Ending focus mode session
-            let defaults = UserDefaults(suiteName: "group.com.ericqin.shift")
-            let sessionCount = defaults?.integer(forKey: "focusBlockCount") ?? 0
-            defaults?.set(sessionCount, forKey: "lastSessionBlockCount")
-            defaults?.set(0, forKey: "focusBlockCount")
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                let message = "You tried to open blocked apps \(sessionCount) time\(sessionCount == 1 ? "" : "s")."
-                let alert = UIAlertController(title: "Session Ended", message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default))
-                self.present(alert, animated: true)
-            }
-        } else {
-            // Starting new session
-            UserDefaults(suiteName: "group.com.ericqin.shift")?.set(0, forKey: "focusBlockCount")
-
-            let alert = UIAlertController(
-                title: "Focus Mode Activated",
-                message: "Blocked apps will now be restricted.",
-                preferredStyle: .alert
-            )
-            self.present(alert, animated: true)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                alert.dismiss(animated: true)
-            }
-        }
-
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
