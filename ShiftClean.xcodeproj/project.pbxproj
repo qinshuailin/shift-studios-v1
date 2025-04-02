@@ -7,13 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		55B031EE2D9B36DB00B330B2 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031ED2D9B36DB00B330B2 /* ManagedSettings.framework */; };
-		55B031F02D9B36DB00B330B2 /* ManagedSettingsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031EF2D9B36DB00B330B2 /* ManagedSettingsUI.framework */; };
-		55B031F82D9B36DB00B330B2 /* ShiftShieldExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 55B031EB2D9B36DB00B330B2 /* ShiftShieldExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		55256AEF2D9CB74400C6D495 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031ED2D9B36DB00B330B2 /* ManagedSettings.framework */; };
+		55256AF02D9CB74400C6D495 /* ManagedSettings.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031ED2D9B36DB00B330B2 /* ManagedSettings.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		55256AF22D9CB74500C6D495 /* ManagedSettingsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031EF2D9B36DB00B330B2 /* ManagedSettingsUI.framework */; };
+		55256AF32D9CB74500C6D495 /* ManagedSettingsUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031EF2D9B36DB00B330B2 /* ManagedSettingsUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		55AF4F822D9CB896005CC9FA /* ShiftShieldExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 55B031EB2D9B36DB00B330B2 /* ShiftShieldExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		55B031F62D9B36DB00B330B2 /* PBXContainerItemProxy */ = {
+		55256AF42D9CB7DF00C6D495 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 55B031692D994C2900B330B2 /* Project object */;
 			proxyType = 1;
@@ -23,15 +25,37 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		55B031F92D9B36DB00B330B2 /* Embed Foundation Extensions */ = {
+		55256AEC2D9CB70E00C6D495 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				55B031F82D9B36DB00B330B2 /* ShiftShieldExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55256AF12D9CB74400C6D495 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				55256AF02D9CB74400C6D495 /* ManagedSettings.framework in Embed Frameworks */,
+				55256AF32D9CB74500C6D495 /* ManagedSettingsUI.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55AF4F812D9CB831005CC9FA /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				55AF4F822D9CB896005CC9FA /* ShiftShieldExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -91,8 +115,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				55B031EE2D9B36DB00B330B2 /* ManagedSettings.framework in Frameworks */,
-				55B031F02D9B36DB00B330B2 /* ManagedSettingsUI.framework in Frameworks */,
+				55256AEF2D9CB74400C6D495 /* ManagedSettings.framework in Frameworks */,
+				55256AF22D9CB74500C6D495 /* ManagedSettingsUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,12 +161,13 @@
 				55B0316D2D994C2900B330B2 /* Sources */,
 				55B0316E2D994C2900B330B2 /* Frameworks */,
 				55B0316F2D994C2900B330B2 /* Resources */,
-				55B031F92D9B36DB00B330B2 /* Embed Foundation Extensions */,
+				55256AEC2D9CB70E00C6D495 /* Embed Foundation Extensions */,
+				55AF4F812D9CB831005CC9FA /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				55B031F72D9B36DB00B330B2 /* PBXTargetDependency */,
+				55256AF52D9CB7DF00C6D495 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				55B031732D994C2900B330B2 /* ShiftClean */,
@@ -161,6 +186,7 @@
 				55B031E72D9B36DB00B330B2 /* Sources */,
 				55B031E82D9B36DB00B330B2 /* Frameworks */,
 				55B031E92D9B36DB00B330B2 /* Resources */,
+				55256AF12D9CB74400C6D495 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -249,10 +275,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		55B031F72D9B36DB00B330B2 /* PBXTargetDependency */ = {
+		55256AF52D9CB7DF00C6D495 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 55B031EA2D9B36DB00B330B2 /* ShiftShieldExtension */;
-			targetProxy = 55B031F62D9B36DB00B330B2 /* PBXContainerItemProxy */;
+			targetProxy = 55256AF42D9CB7DF00C6D495 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -274,6 +300,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -304,6 +331,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -447,6 +475,7 @@
 				INFOPLIST_FILE = ShiftShieldExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ShiftShieldExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -473,6 +502,7 @@
 				INFOPLIST_FILE = ShiftShieldExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ShiftShieldExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

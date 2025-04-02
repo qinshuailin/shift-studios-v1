@@ -3,7 +3,7 @@ import SwiftUI
 import FamilyControls
 import ManagedSettings
 
-class MainViewController: UIViewController, NFCControllerDelegate {
+class MainViewController: UIViewController {
     private let appBlockingModel = AppBlockingModel.shared
     private let toggleButton = UIButton(type: .system)
     private let settingsButton = UIButton(type: .system)
@@ -12,7 +12,6 @@ class MainViewController: UIViewController, NFCControllerDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        print("MainViewController loaded")
 
         requestScreenTimePermission()
         view.backgroundColor = .white
@@ -26,7 +25,7 @@ class MainViewController: UIViewController, NFCControllerDelegate {
                 try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
                 print("Screen Time authorization granted")
             } catch {
-                print("Screen Time authorization failed: \(error.localizedDescription)")
+                print("Authorization failed: \(error.localizedDescription)")
             }
         }
     }
@@ -122,12 +121,21 @@ class MainViewController: UIViewController, NFCControllerDelegate {
         NFCController.shared.beginScanning()
     }
 
-    func didToggleFocusMode() {
-        updateStatusLabel()
-    }
-
     private func updateStatusLabel() {
         let isActive = AppBlockingManager.shared.isFocusModeActive()
         statusLabel.text = isActive ? "FOCUS MODE ON" : "FOCUS MODE OFF"
+    }
+}
+
+// Explicitly Conform to NFCControllerDelegate
+extension MainViewController: NFCControllerDelegate {
+    func didScanNFCTag() {
+        AppBlockingManager.shared.toggleFocusMode()
+        updateStatusLabel()
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
+    func didToggleFocusMode() {
+        updateStatusLabel()
     }
 }

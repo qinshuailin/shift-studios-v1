@@ -18,7 +18,13 @@ class AppBlockingManager {
 
     func toggleFocusMode() {
         focusModeActive.toggle()
-        store.shield.applications = focusModeActive && !currentTokens.isEmpty ? currentTokens : nil
+
+        if focusModeActive {
+            store.shield.applications = currentTokens.isEmpty ? nil : currentTokens
+        } else {
+            store.shield.applications = nil
+            ShieldPresenter.shared.hide()
+        }
     }
 
     func isFocusModeActive() -> Bool {
@@ -29,5 +35,6 @@ class AppBlockingManager {
         store.shield.applications = nil
         currentTokens.removeAll()
         focusModeActive = false
+        ShieldPresenter.shared.hide()
     }
 }
