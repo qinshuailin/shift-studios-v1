@@ -23,7 +23,6 @@ class AppBlockingManager {
             store.shield.applications = currentTokens.isEmpty ? nil : currentTokens
         } else {
             store.shield.applications = nil
-            ShieldPresenter.shared.hide()
         }
     }
 
@@ -35,6 +34,5 @@ class AppBlockingManager {
         store.shield.applications = nil
         currentTokens.removeAll()
         focusModeActive = false
-        ShieldPresenter.shared.hide()
     }
 }
