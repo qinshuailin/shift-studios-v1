@@ -12,7 +12,6 @@ class MainViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         requestScreenTimePermission()
         view.backgroundColor = .white
         setupUI()
@@ -100,20 +99,29 @@ class MainViewController: UIViewController {
                 AppBlockingManager.shared.setAppsToBlock($0)
             }
         ))
+        .navigationTitle("Choose Activities")
+        .navigationBarTitleDisplayMode(.inline)
 
-        let wrappedPicker = NavigationView {
+        let wrapped = NavigationView {
             picker
-                .navigationTitle("Select Apps")
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            self.dismiss(animated: true)
+                        }
+                        .foregroundColor(.white)
+                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button("Done") {
                             self.dismiss(animated: true)
                         }
+                        .foregroundColor(.white)
                     }
                 }
         }
 
-        let controller = UIHostingController(rootView: wrappedPicker)
+        let controller = UIHostingController(rootView: wrapped)
+        controller.overrideUserInterfaceStyle = .dark
         present(controller, animated: true)
     }
 
@@ -127,7 +135,6 @@ class MainViewController: UIViewController {
     }
 }
 
-// Explicitly Conform to NFCControllerDelegate
 extension MainViewController: NFCControllerDelegate {
     func didScanNFCTag() {
         AppBlockingManager.shared.toggleFocusMode()
