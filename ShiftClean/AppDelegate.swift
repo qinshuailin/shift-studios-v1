@@ -4,7 +4,11 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Force dark mode at the system level
+        if #available(iOS 13.0, *) {
+            // This is the correct way to set dark mode globally
+            UIWindow.appearance().overrideUserInterfaceStyle = .dark
+        }
         return true
     }
 

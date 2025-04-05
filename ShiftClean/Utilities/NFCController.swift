@@ -4,6 +4,7 @@ import UIKit
 
 // Protocol for UI callbacks
 protocol NFCControllerDelegate: AnyObject {
+    func didScanNFCTag()
     func didToggleFocusMode()
 }
 
@@ -13,17 +14,25 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
 
     weak var delegate: NFCControllerDelegate?
 
-    private var session: NFCNDEFReaderSession?
+    // Make session property internal instead of private
+    var nfcSession: NFCNDEFReaderSession?
 
+    // Inside beginScanning() method
     func beginScanning() {
         guard NFCNDEFReaderSession.readingAvailable else {
             print("NFC not supported on this device")
             return
         }
-
-        session = NFCNDEFReaderSession(delegate: self, queue: nil, invalidateAfterFirstRead: true)
-        session?.alertMessage = "Hold your iPhone near your Shift tag."
-        session?.begin()
+        
+        // Force dark mode at the system level before starting NFC session
+        if #available(iOS 13.0, *) {
+            // Use UIWindow.appearance() instead of trying to access windows directly
+            UIWindow.appearance().overrideUserInterfaceStyle = .dark
+        }
+        
+        nfcSession = NFCNDEFReaderSession(delegate: self, queue: nil, invalidateAfterFirstRead: true)
+        nfcSession?.alertMessage = "Hold your iPhone near your Shift tag."
+        nfcSession?.begin()
     }
 
     func readerSessionDidBecomeActive(_ session: NFCNDEFReaderSession) {
@@ -53,6 +62,8 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
         print("Scanned NFC Tag Payload: \(tagString)")
 
         DispatchQueue.main.async {
+            self.delegate?.didScanNFCTag()
+            
             if tagString == "SHIFT_TAG_001" {
                 AppBlockingManager.shared.toggleFocusMode()
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
