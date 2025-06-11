@@ -8,18 +8,35 @@ class StatsViewController: UIViewController {
         setupUI()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        // Hide navigation bar on this screen
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        // Show navigation bar on other screens
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+    
     private func setupUI() {
+        // Get data from StatsManager
+        let screenTime = StatsManager.shared.totalFocusTime
+        let timeSaved = StatsManager.shared.totalTimeSavedToday
+        let dailyGoal = StatsManager.shared.dailyGoal
+        let streak = StatsManager.shared.currentStreak
+        let weeklyData = StatsManager.shared.weeklyData
+        
         // Create the SwiftUI view
-        let statsView = UIHostingController(rootView: DropdownStatsView(
-            focusTime: StatsManager.shared.totalFocusTime,
-            streak: StatsManager.shared.currentStreak,
-            appUsageData: StatsManager.shared.appUsageData,
-            weeklyData: StatsManager.shared.weeklyData,
-            categoryData: StatsManager.shared.categoryUsageData,
-            pickupsData: StatsManager.shared.pickupsData,
-            hourlyUsageData: StatsManager.shared.hourlyUsageData,
-            firstPickupTime: StatsManager.shared.firstPickupTime,
-            longestSession: StatsManager.shared.longestSession
+        let statsView = UIHostingController(rootView: StatsView(
+            screenTime: screenTime,
+            timeSaved: timeSaved,
+            dailyGoal: dailyGoal,
+            streak: streak,
+            weeklyData: weeklyData
         ))
         
         // Add as child view controller
