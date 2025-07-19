@@ -54,12 +54,16 @@ class MainViewController: UIViewController {
     private let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
     private let notificationFeedback = UINotificationFeedbackGenerator()
     
+    // Add this property for observing stats updates
+    private var statsObserver: NSObjectProtocol?
+    
     // MARK: - Lifecycle Methods
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         nfcController.delegate = self
-        
+        // Set up live updates observer
+        setupStatsObserver()
         // Prepare haptic feedback generators
         selectionFeedback.prepare()
         impactFeedback.prepare()
@@ -80,6 +84,10 @@ class MainViewController: UIViewController {
         
         // Update UI based on current state
         updateUI()
+        // Ensure time saved display is up to date when app enters foreground
+        StatsManager.shared.updateTotalTimeSavedToday()
+        // Sync Live Activity with actual elapsed time
+        StatsManager.shared.syncLiveActivityIfNeeded()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -445,11 +453,8 @@ class MainViewController: UIViewController {
             appSelectionButton.isEnabled = true
         }
         
-        // Update time saved label
-        let timeSaved = StatsManager.shared.totalTimeSavedToday
-        let hours = timeSaved / 60
-        let minutes = timeSaved % 60
-        timeSavedLabel.text = "time saved today: \(hours)h \(minutes)m"
+        // Update time saved display (this will now show live updates)
+        updateTimeSavedDisplay()
         // Update streak display
         let currentStreak = StatsManager.shared.currentStreak
         streakDisplayLabel.text = "streak: \(currentStreak) days"
@@ -467,6 +472,36 @@ class MainViewController: UIViewController {
         goalEditor.modalPresentationStyle = .overFullScreen
         goalEditor.modalTransitionStyle = .crossDissolve
         present(goalEditor, animated: true)
+    }
+    
+    // Add this new method to set up the stats observer
+    private func setupStatsObserver() {
+        // Remove any existing observer
+        if let observer = statsObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        // Observe changes to stats
+        statsObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("StatsUpdated"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateTimeSavedDisplay()
+        }
+    }
+    // Add this new method to update just the time saved display
+    private func updateTimeSavedDisplay() {
+        let timeSaved = StatsManager.shared.totalTimeSavedToday
+        let hours = timeSaved / 60
+        let minutes = timeSaved % 60
+        timeSavedLabel.text = "time saved today: \(hours)h \(minutes)m"
+    }
+    
+    // Clean up observer when view controller is deallocated
+    deinit {
+        if let observer = statsObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 }
 

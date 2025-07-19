@@ -93,23 +93,35 @@ class StatsManager: ObservableObject {
         lastUpdated = Date()
     }
     
-    // NEW: Calculate total time saved today (completed sessions + current session)
-    private func updateTotalTimeSavedToday() {
+    // Make this public so it can be called from outside
+    func updateTotalTimeSavedToday() {
         var total = totalFocusTime // Completed sessions today
         // Add current session time if focus mode is active
         if isFocusModeActive, let start = focusModeStartTime {
             let currentSessionMinutes = Int(Date().timeIntervalSince(start) / 60)
+            // Remove any cap or limit here
             total += currentSessionMinutes
         }
-        totalTimeSavedToday = total
+        // Only update if the value has actually changed to avoid unnecessary UI updates
+        if totalTimeSavedToday != total {
+            DispatchQueue.main.async {
+                self.totalTimeSavedToday = total
+                // Post notification for UI updates
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("StatsUpdated"),
+                    object: nil
+                )
+            }
+        }
     }
     
-    // NEW: Start live updates every second when focus mode is active
+    // NEW: Start live updates every minute when focus mode is active
     private func startLiveUpdates() {
-        liveUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        liveUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             if self.isFocusModeActive {
                 self.updateTotalTimeSavedToday()
+                print("[StatsManager] Live update: totalTimeSavedToday = \(self.totalTimeSavedToday)")
             }
         }
     }
@@ -135,6 +147,8 @@ class StatsManager: ObservableObject {
         userDefaults.set(true, forKey: focusModeActiveKey)
         isFocusModeActive = true
         focusModeStartTime = session.startTime
+        // Immediately update the total time saved display
+        updateTotalTimeSavedToday()
         // Start Live Activity
         let goalMinutes = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
         FocusLiveActivityManager.shared.start(goalMinutes: goalMinutes > 0 ? goalMinutes : 60)
@@ -407,6 +421,14 @@ class StatsManager: ObservableObject {
         guard let start = focusModeStartTime else { return }
         let elapsed = Int(Date().timeIntervalSince(start))
         FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+    }
+    
+    // Call this on app launch/foreground to sync Live Activity with actual elapsed time
+    func syncLiveActivityIfNeeded() {
+        if isFocusModeActive, let start = focusModeStartTime {
+            let elapsed = Int(Date().timeIntervalSince(start))
+            FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+        }
     }
     
     deinit {
