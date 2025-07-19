@@ -433,9 +433,17 @@ class MainViewController: UIViewController {
         }
         
         // Update app selection button
-        // Fixed: Use UserDefaults to track if apps are selected instead of checking isEmpty
-        let hasSelectedApps = AppBlockingService.shared.isFocusModeActive() || UserDefaults.standard.bool(forKey: "hasAppsSelected")
-        appSelectionButton.setTitle(hasSelectedApps ? "apps selected" : "no apps selected", for: .normal)
+        if isActive {
+            appSelectionButton.setTitle("cannot change during focus", for: .normal)
+            appSelectionButton.setTitleColor(.gray, for: .normal)
+            appSelectionButton.backgroundColor = UIColor.systemGray6
+            appSelectionButton.isEnabled = false
+        } else {
+            appSelectionButton.setTitle("Select apps to block", for: .normal)
+            appSelectionButton.setTitleColor(.black, for: .normal)
+            appSelectionButton.backgroundColor = .white
+            appSelectionButton.isEnabled = true
+        }
         
         // Update time saved label
         let timeSaved = StatsManager.shared.totalTimeSavedToday

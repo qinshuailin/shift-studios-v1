@@ -35,7 +35,8 @@ class AppBlockingService: ObservableObject {
     
     /// Toggles focus mode on/off and updates statistics
     func toggleFocusMode() {
-        if isFocusModeActive() {
+        let isCurrentlyActive = isFocusModeActive()
+        if isCurrentlyActive {
             // Turn off focus mode
             disableFocusMode()
             StatsManager.shared.endFocusSession()
@@ -44,8 +45,7 @@ class AppBlockingService: ObservableObject {
             enableFocusMode()
             StatsManager.shared.startFocusSession()
         }
-        
-        // Notify observers - fixed post method call
+        // Single notification
         NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeToggled), object: nil)
     }
     

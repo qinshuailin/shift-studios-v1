@@ -16,7 +16,7 @@ struct FocusTimerLiveActivityView: View {
                 .font(.system(size: 36, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             if context.state.isActive {
-                Text("goal: \(context.attributes.goalMinutes) min")
+                Text("work hard, play harder.")
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }

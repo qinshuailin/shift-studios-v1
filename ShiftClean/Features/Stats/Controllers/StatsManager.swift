@@ -94,6 +94,11 @@ class StatsManager: ObservableObject {
     }
     
     func startFocusSession() {
+        // Prevent starting if already active
+        guard !isFocusModeActive else {
+            print("[StatsManager] Focus session already active, ignoring duplicate start")
+            return
+        }
         let session = FocusSession(startTime: Date())
         saveFocusSession(session)
         userDefaults.set(true, forKey: focusModeActiveKey)
@@ -110,19 +115,30 @@ class StatsManager: ObservableObject {
         NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeEnabled), object: nil)
     }
     
-    func endFocusSession() {
+    func endFocusSession(elapsedSeconds: Int? = nil) {
         guard var sessions = getFocusSessions(), !sessions.isEmpty else { return }
         
         // Update the last session with end time
         var lastSession = sessions.removeLast()
         lastSession.endTime = Date()
         
+        // Use the provided elapsedSeconds (from Live Activity) if available, otherwise fallback to durationInMinutes
+        let durationSeconds: Int
+        if let elapsed = elapsedSeconds {
+            durationSeconds = elapsed
+        } else if let duration = lastSession.endTime?.timeIntervalSince(lastSession.startTime) {
+            durationSeconds = Int(duration)
+        } else {
+            durationSeconds = 0
+        }
+        let durationMinutes = durationSeconds / 60
+        
         // Calculate duration and update stats
-        if let duration = lastSession.durationInMinutes {
-            updateDailyMinutes(adding: duration)
-            updateWeeklyMinutes(adding: duration)
-            updateHourlyUsage(adding: duration, at: lastSession.startTime)
-            totalFocusModeTime += Double(duration) * 60
+        if durationMinutes > 0 {
+            updateDailyMinutes(adding: durationMinutes)
+            updateWeeklyMinutes(adding: durationMinutes)
+            updateHourlyUsage(adding: durationMinutes, at: lastSession.startTime)
+            totalFocusModeTime += Double(durationSeconds)
         }
         
         // Save updated session
@@ -134,8 +150,7 @@ class StatsManager: ObservableObject {
         focusModeStartTime = nil
         
         // End Live Activity
-        let elapsed = lastSession.endTime?.timeIntervalSince(lastSession.startTime) ?? 0
-        FocusLiveActivityManager.shared.end(finalElapsedSeconds: Int(elapsed))
+        FocusLiveActivityManager.shared.end(finalElapsedSeconds: durationSeconds)
         liveActivityTimer?.invalidate()
         liveActivityTimer = nil
         
@@ -334,32 +349,36 @@ class StatsManager: ObservableObject {
     private func updateStreak() {
         let today = Calendar.current.startOfDay(for: Date())
         let todayKey = "\(today.timeIntervalSince1970)"
-        
-        if let lastFocusDay = userDefaults.string(forKey: lastFocusDayKey) {
-            if lastFocusDay != todayKey {
-                // Check if yesterday
-                guard let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) else { return }
-                let yesterdayKey = "\(yesterday.timeIntervalSince1970)"
-                
-                if lastFocusDay == yesterdayKey {
-                    // Increment streak
-                    let currentStreakValue = userDefaults.integer(forKey: currentStreakKey)
-                    userDefaults.set(currentStreakValue + 1, forKey: currentStreakKey)
-                    currentStreak = currentStreakValue + 1
-                } else {
-                    // Reset streak
-                    userDefaults.set(1, forKey: currentStreakKey)
-                    currentStreak = 1
+        let dailyGoal = UserDefaults.standard.integer(forKey: "dailyGoalMinutes") // get from UserDefaults or your model
+        let todayFocusMinutes = getDailyFocusMinutes() // Assuming totalTimeSavedToday is the same as getDailyFocusMinutes()
+
+        if todayFocusMinutes >= dailyGoal {
+            // User met the goal today
+            if let lastFocusDay = userDefaults.string(forKey: lastFocusDayKey) {
+                if lastFocusDay != todayKey {
+                    // Check if yesterday was also a streak day
+                    guard let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) else { return }
+                    let yesterdayKey = "\(yesterday.timeIntervalSince1970)"
+                    if lastFocusDay == yesterdayKey {
+                        // Continue streak
+                        let currentStreakValue = userDefaults.integer(forKey: currentStreakKey)
+                        userDefaults.set(currentStreakValue + 1, forKey: currentStreakKey)
+                        currentStreak = currentStreakValue + 1
+                    } else {
+                        // Start new streak
+                        userDefaults.set(1, forKey: currentStreakKey)
+                        currentStreak = 1
+                    }
+                    userDefaults.set(todayKey, forKey: lastFocusDayKey)
                 }
-                
+            } else {
+                // First streak day
+                userDefaults.set(1, forKey: currentStreakKey)
                 userDefaults.set(todayKey, forKey: lastFocusDayKey)
+                currentStreak = 1
             }
-        } else {
-            // First day
-            userDefaults.set(1, forKey: currentStreakKey)
-            userDefaults.set(todayKey, forKey: lastFocusDayKey)
-            currentStreak = 1
         }
+        // If the goal is not met, do not increment or reset the streak here.
     }
     
     private func startAutoRefresh() {

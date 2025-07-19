@@ -18,8 +18,12 @@ extension StatsManager {
     
     // Add a property for total time saved today
     var totalTimeSavedToday: Int {
-        // Calculate from actual usage data
-        // Example: sum focus minutes for today
-        return totalFocusTime
+        // Live updating: add elapsed time from current session if focus mode is active
+        if isFocusModeActive, let start = focusModeStartTime {
+            let elapsed = Int(Date().timeIntervalSince(start))
+            return totalFocusTime + elapsed
+        } else {
+            return totalFocusTime
+        }
     }
 }
