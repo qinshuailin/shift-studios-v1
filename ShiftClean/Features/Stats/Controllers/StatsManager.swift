@@ -115,14 +115,18 @@ class StatsManager: ObservableObject {
         }
     }
     
-    // NEW: Start live updates every minute when focus mode is active
+    // This timer updates the main app UI every MINUTE
     private func startLiveUpdates() {
         liveUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             if self.isFocusModeActive {
                 self.updateTotalTimeSavedToday()
-                print("[StatsManager] Live update: totalTimeSavedToday = \(self.totalTimeSavedToday)")
+                print("[StatsManager] Live update (main app): totalTimeSavedToday = \(self.totalTimeSavedToday)")
             }
+        }
+        // Add to main run loop to survive background transitions
+        if let timer = liveUpdateTimer {
+            RunLoop.main.add(timer, forMode: .common)
         }
     }
     
@@ -152,10 +156,14 @@ class StatsManager: ObservableObject {
         // Start Live Activity
         let goalMinutes = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
         FocusLiveActivityManager.shared.start(goalMinutes: goalMinutes > 0 ? goalMinutes : 60)
-        // Start timer to update Live Activity every second
+        // Start timer to update Live Activity every SECOND
         liveActivityTimer?.invalidate()
         liveActivityTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.updateLiveActivityTimer()
+        }
+        // CRITICAL: Add to main run loop to keep running in background
+        if let timer = liveActivityTimer {
+            RunLoop.main.add(timer, forMode: .common)
         }
         NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeEnabled), object: nil)
     }
@@ -416,9 +424,13 @@ class StatsManager: ObservableObject {
         }
     }
     
-    // Helper to update the Live Activity timer
+    // Make sure this method is robust
     private func updateLiveActivityTimer() {
-        guard let start = focusModeStartTime else { return }
+        guard isFocusModeActive, let start = focusModeStartTime else {
+            liveActivityTimer?.invalidate()
+            liveActivityTimer = nil
+            return
+        }
         let elapsed = Int(Date().timeIntervalSince(start))
         FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
     }

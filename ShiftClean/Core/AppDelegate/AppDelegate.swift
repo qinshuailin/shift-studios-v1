@@ -97,4 +97,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print("Failed to start monitoring: \(error)")
         }
     }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        // Request background time to keep Live Activity timer running
+        if StatsManager.shared.isFocusModeActive {
+            let taskId = application.beginBackgroundTask(withName: "LiveActivityUpdate") {
+                // End the task if time expires
+                application.endBackgroundTask(UIBackgroundTaskIdentifier.invalid)
+            }
+            // Sync Live Activity one more time
+            StatsManager.shared.syncLiveActivityIfNeeded()
+            // End the background task after sync
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                application.endBackgroundTask(taskId)
+            }
+        }
+    }
 }

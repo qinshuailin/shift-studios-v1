@@ -62,9 +62,20 @@ class MainViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         nfcController.delegate = self
-        // Set up live updates observer
         setupStatsObserver()
-        // Prepare haptic feedback generators
+        // Add app lifecycle observers
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
         selectionFeedback.prepare()
         impactFeedback.prepare()
         notificationFeedback.prepare()
@@ -497,11 +508,27 @@ class MainViewController: UIViewController {
         timeSavedLabel.text = "time saved today: \(hours)h \(minutes)m"
     }
     
+    @objc private func appDidEnterBackground() {
+        // Ensure live activity gets one final update before backgrounding
+        if AppBlockingService.shared.isFocusModeActive() {
+            StatsManager.shared.updateTotalTimeSavedToday()
+            StatsManager.shared.syncLiveActivityIfNeeded()
+        }
+    }
+
+    @objc private func appWillEnterForeground() {
+        // Refresh everything when returning to foreground
+        StatsManager.shared.updateTotalTimeSavedToday()
+        StatsManager.shared.syncLiveActivityIfNeeded()
+        updateUI()
+    }
+    
     // Clean up observer when view controller is deallocated
     deinit {
         if let observer = statsObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
