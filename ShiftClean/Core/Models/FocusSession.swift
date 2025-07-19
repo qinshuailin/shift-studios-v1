@@ -1,7 +1,7 @@
 import Foundation
 
 struct FocusSession: Codable, Identifiable {
-    let id = UUID()
+    let id: UUID
     let startTime: Date
     var endTime: Date?
     var durationInMinutes: Int? {
@@ -10,5 +10,11 @@ struct FocusSession: Codable, Identifiable {
     }
     var isActive: Bool {
         return endTime == nil
+    }
+    
+    init(startTime: Date, endTime: Date? = nil) {
+        self.id = UUID()
+        self.startTime = startTime
+        self.endTime = endTime
     }
 }

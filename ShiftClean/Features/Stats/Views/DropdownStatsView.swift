@@ -1,5 +1,7 @@
 import SwiftUI
 import Charts
+import FamilyControls
+import DeviceActivity
 
 struct DropdownStatsView: View {
     let focusTime: Int
@@ -48,7 +50,7 @@ struct DropdownStatsView: View {
     
     // Calculate total time saved
     private var totalTimeSaved: Int {
-        return appUsageData.reduce(0) { $0 + Int($1.timeSaved / 60) }
+        return appUsageData.reduce(0) { $0 + Int($1.duration / 60) }
     }
     
     // Weekly comparison
@@ -493,7 +495,7 @@ struct AppUsageRow: View {
                     .font(Constants.Fonts.headlineSwiftUI())
                     .foregroundColor(Constants.Colors.textSwiftUI)
                 
-                Text(Constants.formatMinutesToHoursAndMinutes(Int(app.timeSaved / 60)) + "/day")
+                Text(Constants.formatMinutesToHoursAndMinutes(Int(app.duration / 60)) + "/day")
                     .font(Constants.Fonts.subheadlineSwiftUI())
                     .foregroundColor(Constants.Colors.secondaryTextSwiftUI)
             }
@@ -512,42 +514,15 @@ struct AppUsageRow: View {
 struct DropdownStatsView_Previews: PreviewProvider {
     static var previews: some View {
         DropdownStatsView(
-            focusTime: 185,
-            streak: 3,
-            appUsageData: [
-                AppUsageData(bundleID: nil, name: "Instagram", timeSaved: 3600),
-                AppUsageData(bundleID: nil, name: "TikTok", timeSaved: 2400),
-                AppUsageData(bundleID: nil, name: "YouTube", timeSaved: 1800),
-                AppUsageData(bundleID: nil, name: "Twitter", timeSaved: 1200)
-            ],
-            weeklyData: [120, 180, 210, 150, 90, 240, 185],
-            categoryData: [
-                CategoryUsageData(category: "Social", apps: [
-                    AppUsageData(bundleID: nil, name: "Instagram", timeSaved: 3600),
-                    AppUsageData(bundleID: nil, name: "TikTok", timeSaved: 2400),
-                    AppUsageData(bundleID: nil, name: "Twitter", timeSaved: 1200)
-                ]),
-                CategoryUsageData(category: "Entertainment", apps: [
-                    AppUsageData(bundleID: nil, name: "YouTube", timeSaved: 1800)
-                ]),
-                CategoryUsageData(category: "Productivity", apps: [])
-            ],
-            pickupsData: [
-                ("Instagram", 15),
-                ("TikTok", 10),
-                ("YouTube", 5)
-            ],
-            hourlyUsageData: [
-                ("8 AM", 15),
-                ("10 AM", 30),
-                ("12 PM", 20),
-                ("2 PM", 45),
-                ("4 PM", 25),
-                ("6 PM", 10),
-                ("8 PM", 35)
-            ],
-            firstPickupTime: Date().addingTimeInterval(-3600 * 8),
-            longestSession: DateInterval(start: Date().addingTimeInterval(-3600), duration: 1800)
+            focusTime: 0,
+            streak: 0,
+            appUsageData: [],
+            weeklyData: [],
+            categoryData: [],
+            pickupsData: [],
+            hourlyUsageData: [],
+            firstPickupTime: nil,
+            longestSession: nil
         )
         .previewLayout(.sizeThatFits)
         .padding()

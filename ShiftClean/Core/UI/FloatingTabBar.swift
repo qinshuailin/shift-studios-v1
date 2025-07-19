@@ -98,17 +98,24 @@ class FloatingTabBar: UIView {
     private func createTabButton(title: String, icon: String, index: Int) -> UIButton {
         let button = UIButton(type: .custom)
         
-        // Configure button
-        button.setTitle(title, for: .normal)
-        button.setImage(UIImage(systemName: icon), for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        // Configure button using UIButtonConfiguration
+        var config = UIButton.Configuration.plain()
+        config.title = title
+        config.image = UIImage(systemName: icon)
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+            return outgoing
+        }
+        config.imagePlacement = .top
+        config.imagePadding = 8
+        config.titlePadding = 4
+        button.configuration = config
+        
+        // Set colors
         button.setTitleColor(.black, for: .normal) // Using black as requested
         button.tintColor = .black // Using black as requested
         button.tag = index
-        
-        // Set content layout
-        button.imageEdgeInsets = UIEdgeInsets(top: -10, left: 0, bottom: 10, right: 0)
-        button.titleEdgeInsets = UIEdgeInsets(top: 20, left: -20, bottom: 0, right: 0)
         
         // Add action
         button.addTarget(self, action: #selector(tabButtonTapped(_:)), for: .touchUpInside)

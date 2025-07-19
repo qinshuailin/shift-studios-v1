@@ -23,27 +23,10 @@ class StatsViewController: UIViewController {
     }
     
     private func setupUI() {
-        // Get data from StatsManager
-        let screenTime = StatsManager.shared.totalFocusTime
-        let timeSaved = StatsManager.shared.totalTimeSavedToday
-        let dailyGoal = StatsManager.shared.dailyGoal
-        let streak = StatsManager.shared.currentStreak
-        let weeklyData = StatsManager.shared.weeklyData
-        
-        // Create the SwiftUI view
-        let statsView = UIHostingController(rootView: StatsView(
-            screenTime: screenTime,
-            timeSaved: timeSaved,
-            dailyGoal: dailyGoal,
-            streak: streak,
-            weeklyData: weeklyData
-        ))
-        
-        // Add as child view controller
+        // Show the new dashboard view for guaranteed display
+        let statsView = UIHostingController(rootView: StatsDashboardView())
         addChild(statsView)
         view.addSubview(statsView.view)
-        
-        // Configure constraints
         statsView.view.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             statsView.view.topAnchor.constraint(equalTo: view.topAnchor),
@@ -51,7 +34,6 @@ class StatsViewController: UIViewController {
             statsView.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             statsView.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-        
         statsView.didMove(toParent: self)
     }
 }

@@ -9,9 +9,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         window = UIWindow(windowScene: windowScene)
         
-        // Set up tab bar controller as root
-        let tabBarController = TabBarController()
-        window?.rootViewController = tabBarController
+        // Set up MainViewController as root (removing tab bar)
+        // let tabBarController = TabBarController() // <--- TEMPORARILY DISABLED
+        // window?.rootViewController = tabBarController // <--- TEMPORARILY DISABLED
+        
+        // Use MainViewController directly as root
+        let mainViewController = MainViewController()
+        let navigationController = UINavigationController(rootViewController: mainViewController)
+        window?.rootViewController = navigationController
         
         // Make window visible
         window?.makeKeyAndVisible()

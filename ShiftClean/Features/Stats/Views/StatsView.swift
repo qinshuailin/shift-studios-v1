@@ -3,7 +3,7 @@ import Charts
 
 struct StatsView: View {
     let screenTime: Int // in minutes
-    let timeSaved: Int // in minutes
+    let duration: Int // in minutes
     let dailyGoal: Int // in minutes
     let streak: Int // in days
     @State private var isEditingGoal: Bool = false
@@ -57,7 +57,7 @@ struct StatsView: View {
                 
                 // Time Saved Card
                 StatCard(title: "TIME SAVED") {
-                    Text("\(timeSaved / 60)h \(timeSaved % 60)m")
+                    Text("\(duration / 60)h \(duration % 60)m")
                         .font(.system(size: 48, weight: .bold))
                         .frame(maxWidth: .infinity, alignment: .center)
                         .opacity(animateElements ? 1 : 0)
@@ -168,11 +168,11 @@ struct StatCard<Content: View>: View {
 struct StatsView_Previews: PreviewProvider {
     static var previews: some View {
         StatsView(
-            screenTime: 225, // 3h 45m
-            timeSaved: 80,   // 1h 20m
-            dailyGoal: 120,  // 2h 0m
-            streak: 5,
-            weeklyData: [30, 35, 50, 40, 45, 60, 65]
+            screenTime: 0,
+            duration: 0,
+            dailyGoal: 0,
+            streak: 0,
+            weeklyData: []
         )
     }
 }

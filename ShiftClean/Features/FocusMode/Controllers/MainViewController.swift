@@ -4,6 +4,27 @@ import FamilyControls
 import ManagedSettings
 import CoreNFC
 
+// Add a SwiftUI wrapper for the picker with Cancel/Done
+struct ActivityPickerSheet: View {
+    @Binding var selection: FamilyActivitySelection
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        NavigationView {
+            FamilyActivityPicker(selection: $selection)
+                .navigationBarTitle("Choose Activities", displayMode: .inline)
+                .navigationBarItems(
+                    leading: Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    },
+                    trailing: Button("Done") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                )
+        }
+    }
+}
+
 class MainViewController: UIViewController {
 
     // MARK: - Properties
@@ -14,8 +35,19 @@ class MainViewController: UIViewController {
     private let appSelectionLabel = UILabel()
     private let appSelectionButton = UIButton()
     private let timeSavedLabel = UILabel()
+    private let streakContainer = UIView() // Replace streakLabel with container
+    private let streakDisplayLabel = UILabel() // Current streak display
+    private let goalDisplayLabel = UILabel() // Goal display (read-only)
+    private let goalButton = UIButton() // Goal edit button
     private var familyActivitySelection = FamilyActivitySelection()
     private let nfcController = NFCController.shared
+    private let model = MyModel.shared
+    private var isPickerPresented = false
+    // Add a stack view to hold all main content
+    private let mainStackView = UIStackView()
+    
+    // Store the centerY constraint so we can update its constant dynamically
+    private var mainStackViewCenterYConstraint: NSLayoutConstraint?
     
     // Haptic feedback generators
     private let selectionFeedback = UISelectionFeedbackGenerator()
@@ -41,7 +73,7 @@ class MainViewController: UIViewController {
         navigationController?.setNavigationBarHidden(true, animated: animated)
         
         // Ensure tab bar is visible
-        tabBarController?.tabBar.isHidden = false
+        // tabBarController?.tabBar.isHidden = false // <--- TEMPORARILY DISABLED
         
         // Animate content appearance
         animateContentAppearance()
@@ -55,6 +87,15 @@ class MainViewController: UIViewController {
         
         // Show navigation bar on other screens
         navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Move the stack view up so it sits in the top 2/3 of the screen
+        if let constraint = mainStackViewCenterYConstraint {
+            let offset = -view.bounds.height / 6 // 1/6 up moves center to 1/3 from top
+            constraint.constant = offset
+        }
     }
     
     // MARK: - UI Setup
@@ -73,6 +114,12 @@ class MainViewController: UIViewController {
         
         // Setup time saved label
         setupTimeSavedLabel()
+        
+        // Setup streak container
+        setupStreakContainer()
+        
+        // Setup and layout the main stack view
+        setupMainStackView()
     }
     
     private func setupLogoLabel() {
@@ -80,161 +127,200 @@ class MainViewController: UIViewController {
         logoLabel.text = "shift."
         logoLabel.textAlignment = .left
         logoLabel.textColor = .black
-        logoLabel.font = UIFont.systemFont(ofSize: 48, weight: .bold)
-        logoLabel.alpha = 0 // Start invisible for animation
-        view.addSubview(logoLabel)
-        
-        NSLayoutConstraint.activate([
-            logoLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-            logoLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
-            logoLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30)
-        ])
+        logoLabel.font = UIFont.systemFont(ofSize: 44, weight: .bold)
+        logoLabel.backgroundColor = .white
+        logoLabel.layer.borderWidth = 0
+        logoLabel.layer.borderColor = UIColor.clear.cgColor
+        logoLabel.alpha = 0
+        // Don't add to view here, will add to stack view later
     }
     
     private func setupClockInButton() {
-        // Create container view for the entire clock in section
         clockInContainer.translatesAutoresizingMaskIntoConstraints = false
         clockInContainer.backgroundColor = .white
         clockInContainer.layer.borderWidth = 1
-        clockInContainer.layer.borderColor = UIColor.lightGray.cgColor
+        clockInContainer.layer.borderColor = UIColor.gray.withAlphaComponent(0.5).cgColor
         clockInContainer.layer.cornerRadius = 8
-        
-        // Add shadow to container
-        clockInContainer.layer.shadowColor = UIColor.black.withAlphaComponent(0.1).cgColor
-        clockInContainer.layer.shadowOffset = CGSize(width: 0, height: 2)
-        clockInContainer.layer.shadowRadius = 4
-        clockInContainer.layer.shadowOpacity = 1
-        clockInContainer.clipsToBounds = false
-        
-        // Add tap gesture to container
+        clockInContainer.clipsToBounds = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(clockInContainerTapped))
         clockInContainer.addGestureRecognizer(tapGesture)
         clockInContainer.isUserInteractionEnabled = true
-        
-        clockInContainer.alpha = 0 // Start invisible for animation
-        view.addSubview(clockInContainer)
-        
-        // Create clock icon
+        clockInContainer.alpha = 0
+        // Don't add to view here, will add to stack view later
         let clockIcon = UIImageView(image: UIImage(systemName: "clock"))
         clockIcon.translatesAutoresizingMaskIntoConstraints = false
         clockIcon.tintColor = .black
         clockIcon.contentMode = .scaleAspectFit
         clockInContainer.addSubview(clockIcon)
-        
-        // Create text stack
         let textStack = UIStackView()
         textStack.translatesAutoresizingMaskIntoConstraints = false
         textStack.axis = .vertical
         textStack.alignment = .leading
-        textStack.spacing = 4
-        
+        textStack.spacing = 2
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Clock In"
+        titleLabel.text = "clock in"
         titleLabel.textColor = .black
-        titleLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
-        
+        titleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
         let subtitleLabel = UILabel()
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Start tracking your focus session"
-        subtitleLabel.textColor = .darkGray
-        subtitleLabel.font = UIFont.systemFont(ofSize: 16)
-        
+        subtitleLabel.text = "start tracking your focus session"
+        subtitleLabel.textColor = .gray
+        subtitleLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
         textStack.addArrangedSubview(titleLabel)
         textStack.addArrangedSubview(subtitleLabel)
         clockInContainer.addSubview(textStack)
-        
-        // Layout constraints for container
         NSLayoutConstraint.activate([
-            clockInContainer.topAnchor.constraint(equalTo: logoLabel.bottomAnchor, constant: 40),
-            clockInContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
-            clockInContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30),
-            clockInContainer.heightAnchor.constraint(equalToConstant: 80),
-            
-            clockIcon.leadingAnchor.constraint(equalTo: clockInContainer.leadingAnchor, constant: 20),
+            clockIcon.leadingAnchor.constraint(equalTo: clockInContainer.leadingAnchor, constant: 16),
             clockIcon.centerYAnchor.constraint(equalTo: clockInContainer.centerYAnchor),
-            clockIcon.widthAnchor.constraint(equalToConstant: 30),
-            clockIcon.heightAnchor.constraint(equalToConstant: 30),
-            
-            textStack.leadingAnchor.constraint(equalTo: clockIcon.trailingAnchor, constant: 15),
-            textStack.trailingAnchor.constraint(equalTo: clockInContainer.trailingAnchor, constant: -20),
+            clockIcon.widthAnchor.constraint(equalToConstant: 28),
+            clockIcon.heightAnchor.constraint(equalToConstant: 28),
+            textStack.leadingAnchor.constraint(equalTo: clockIcon.trailingAnchor, constant: 12),
+            textStack.trailingAnchor.constraint(equalTo: clockInContainer.trailingAnchor, constant: -16),
             textStack.centerYAnchor.constraint(equalTo: clockInContainer.centerYAnchor)
+        ])
+        // Set a fixed height for the container
+        NSLayoutConstraint.activate([
+            clockInContainer.heightAnchor.constraint(equalToConstant: 70)
         ])
     }
     
     private func setupAppSelection() {
-        // Container setup
         appSelectionContainer.translatesAutoresizingMaskIntoConstraints = false
         appSelectionContainer.backgroundColor = .white
         appSelectionContainer.layer.borderWidth = 1
-        appSelectionContainer.layer.borderColor = UIColor.lightGray.cgColor
+        appSelectionContainer.layer.borderColor = UIColor.gray.withAlphaComponent(0.5).cgColor
         appSelectionContainer.layer.cornerRadius = 8
-        appSelectionContainer.alpha = 0 // Start invisible for animation
-        view.addSubview(appSelectionContainer)
-        
-        // Label setup - centered
+        appSelectionContainer.alpha = 0
+        // Don't add to view here, will add to stack view later
         appSelectionLabel.translatesAutoresizingMaskIntoConstraints = false
         appSelectionLabel.text = "select apps:"
         appSelectionLabel.textColor = .black
-        appSelectionLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
-        appSelectionLabel.textAlignment = .center // Center the text
+        appSelectionLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+        appSelectionLabel.textAlignment = .center
         appSelectionContainer.addSubview(appSelectionLabel)
-        
-        // Button setup
         appSelectionButton.translatesAutoresizingMaskIntoConstraints = false
-        appSelectionButton.setTitle("No apps selected", for: .normal)
-        appSelectionButton.setTitleColor(.darkGray, for: .normal)
-        appSelectionButton.contentHorizontalAlignment = .center // Center the text
-        appSelectionButton.titleLabel?.font = UIFont.systemFont(ofSize: 16)
+        appSelectionButton.setTitle("no apps selected", for: .normal)
+        appSelectionButton.setTitleColor(.black, for: .normal)
+        appSelectionButton.contentHorizontalAlignment = .center
+        appSelectionButton.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         appSelectionButton.backgroundColor = .white
         appSelectionButton.layer.borderWidth = 1
-        appSelectionButton.layer.borderColor = UIColor.lightGray.cgColor
+        appSelectionButton.layer.borderColor = UIColor.gray.withAlphaComponent(0.5).cgColor
         appSelectionButton.layer.cornerRadius = 8
         appSelectionButton.addTarget(self, action: #selector(appSelectionButtonTapped), for: .touchUpInside)
         appSelectionContainer.addSubview(appSelectionButton)
-        
-        // Layout constraints - adjusted to move text down
         NSLayoutConstraint.activate([
-            appSelectionContainer.topAnchor.constraint(equalTo: clockInContainer.bottomAnchor, constant: 40),
-            appSelectionContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
-            appSelectionContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30),
-            appSelectionContainer.heightAnchor.constraint(equalToConstant: 120),
-            
-            // Center the label horizontally
-            appSelectionLabel.topAnchor.constraint(equalTo: appSelectionContainer.topAnchor, constant: 15),
+            appSelectionLabel.topAnchor.constraint(equalTo: appSelectionContainer.topAnchor, constant: 12),
             appSelectionLabel.centerXAnchor.constraint(equalTo: appSelectionContainer.centerXAnchor),
-            appSelectionLabel.leadingAnchor.constraint(greaterThanOrEqualTo: appSelectionContainer.leadingAnchor, constant: 15),
-            appSelectionLabel.trailingAnchor.constraint(lessThanOrEqualTo: appSelectionContainer.trailingAnchor, constant: -15),
-            
-            // Move the button down by increasing the top constant
-            appSelectionButton.topAnchor.constraint(equalTo: appSelectionLabel.bottomAnchor, constant: 20), // Increased from 10
-            appSelectionButton.leadingAnchor.constraint(equalTo: appSelectionContainer.leadingAnchor, constant: 15),
-            appSelectionButton.trailingAnchor.constraint(equalTo: appSelectionContainer.trailingAnchor, constant: -15),
-            appSelectionButton.heightAnchor.constraint(equalToConstant: 50)
+            appSelectionButton.topAnchor.constraint(equalTo: appSelectionLabel.bottomAnchor, constant: 16),
+            appSelectionButton.leadingAnchor.constraint(equalTo: appSelectionContainer.leadingAnchor, constant: 16),
+            appSelectionButton.trailingAnchor.constraint(equalTo: appSelectionContainer.trailingAnchor, constant: -16),
+            appSelectionButton.heightAnchor.constraint(equalToConstant: 44),
+            appSelectionContainer.heightAnchor.constraint(equalToConstant: 100)
         ])
-        
-        // Add touch animations
         addButtonTouchAnimations(to: appSelectionButton)
     }
     
     private func setupTimeSavedLabel() {
         timeSavedLabel.translatesAutoresizingMaskIntoConstraints = false
-        timeSavedLabel.text = "Time Saved Today: 0h 0m"
+        timeSavedLabel.text = "time saved today: 0h 0m"
         timeSavedLabel.textAlignment = .center
-        timeSavedLabel.textColor = .darkGray
-        timeSavedLabel.font = UIFont.systemFont(ofSize: 16)
+        timeSavedLabel.textColor = .black
+        timeSavedLabel.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         timeSavedLabel.backgroundColor = .white
-        timeSavedLabel.layer.borderWidth = 1
-        timeSavedLabel.layer.borderColor = UIColor.lightGray.cgColor
-        timeSavedLabel.layer.cornerRadius = 8
-        timeSavedLabel.alpha = 0 // Start invisible for animation
-        view.addSubview(timeSavedLabel)
+        timeSavedLabel.layer.borderWidth = 0
+        timeSavedLabel.layer.borderColor = UIColor.clear.cgColor
+        timeSavedLabel.layer.cornerRadius = 0
+        timeSavedLabel.alpha = 0
+        // Don't add to view here, will add to stack view later
+        NSLayoutConstraint.activate([
+            timeSavedLabel.heightAnchor.constraint(equalToConstant: 40)
+        ])
+    }
+    
+    private func setupStreakContainer() {
+        streakContainer.translatesAutoresizingMaskIntoConstraints = false
+        streakContainer.backgroundColor = .white
+        streakContainer.layer.borderWidth = 1
+        streakContainer.layer.borderColor = UIColor.gray.withAlphaComponent(0.5).cgColor
+        streakContainer.layer.cornerRadius = 8
+        streakContainer.alpha = 0      // Don't add to view here, will add to stack view later
+        
+        // Setup streak display label
+        streakDisplayLabel.translatesAutoresizingMaskIntoConstraints = false
+        streakDisplayLabel.text = "streak: 0 days"
+        streakDisplayLabel.textAlignment = .center
+        streakDisplayLabel.textColor = .black
+        streakDisplayLabel.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        streakContainer.addSubview(streakDisplayLabel)
+        
+        // Setup goal display label
+        goalDisplayLabel.translatesAutoresizingMaskIntoConstraints = false
+        goalDisplayLabel.text = "goal: 0h 0m"
+        goalDisplayLabel.textAlignment = .center
+        goalDisplayLabel.textColor = .black
+        goalDisplayLabel.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        goalDisplayLabel.backgroundColor = .white
+        goalDisplayLabel.layer.borderWidth = 1
+        goalDisplayLabel.layer.borderColor = UIColor.gray.withAlphaComponent(0.5).cgColor
+        goalDisplayLabel.layer.cornerRadius = 6
+        streakContainer.addSubview(goalDisplayLabel)
+        
+        // Setup goal button
+        goalButton.translatesAutoresizingMaskIntoConstraints = false
+        goalButton.setTitle("edit", for: .normal)
+        goalButton.setTitleColor(.black, for: .normal)
+        goalButton.titleLabel?.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        goalButton.backgroundColor = .white
+        goalButton.layer.borderWidth = 1
+        goalButton.layer.borderColor = UIColor.gray.withAlphaComponent(0.5).cgColor
+        goalButton.layer.cornerRadius = 6
+        goalButton.addTarget(self, action: #selector(goalButtonTapped), for: .touchUpInside)
+        streakContainer.addSubview(goalButton)
         
         NSLayoutConstraint.activate([
-            timeSavedLabel.topAnchor.constraint(equalTo: appSelectionContainer.bottomAnchor, constant: 40),
-            timeSavedLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
-            timeSavedLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30),
-            timeSavedLabel.heightAnchor.constraint(equalToConstant: 50)
+            streakContainer.heightAnchor.constraint(equalToConstant: 80),
+            streakDisplayLabel.topAnchor.constraint(equalTo: streakContainer.topAnchor, constant: 12),
+            streakDisplayLabel.centerXAnchor.constraint(equalTo: streakContainer.centerXAnchor),
+            streakDisplayLabel.leadingAnchor.constraint(greaterThanOrEqualTo: streakContainer.leadingAnchor, constant: 16),
+            streakDisplayLabel.trailingAnchor.constraint(lessThanOrEqualTo: streakContainer.trailingAnchor, constant: -16),
+            goalDisplayLabel.topAnchor.constraint(equalTo: streakDisplayLabel.bottomAnchor, constant: 8),
+            goalDisplayLabel.leadingAnchor.constraint(equalTo: streakContainer.leadingAnchor, constant: 16),
+            goalDisplayLabel.heightAnchor.constraint(equalToConstant: 32),
+            goalButton.topAnchor.constraint(equalTo: streakDisplayLabel.bottomAnchor, constant: 8),
+            goalButton.leadingAnchor.constraint(equalTo: goalDisplayLabel.trailingAnchor, constant: 8),
+            goalButton.trailingAnchor.constraint(equalTo: streakContainer.trailingAnchor, constant: -16),
+            goalButton.widthAnchor.constraint(equalToConstant: 50),
+            goalButton.heightAnchor.constraint(equalToConstant: 32)
+        ])
+        
+        addButtonTouchAnimations(to: goalButton)
+    }
+    
+    private func setupMainStackView() {
+        mainStackView.translatesAutoresizingMaskIntoConstraints = false
+        mainStackView.axis = .vertical
+        mainStackView.alignment = .fill
+        mainStackView.distribution = .equalSpacing
+        mainStackView.spacing = 18
+        // Add arranged subviews
+        mainStackView.addArrangedSubview(logoLabel)
+        mainStackView.addArrangedSubview(clockInContainer)
+        mainStackView.addArrangedSubview(appSelectionContainer)
+        mainStackView.addArrangedSubview(timeSavedLabel)
+        mainStackView.addArrangedSubview(streakContainer) // Add streak container to stack
+        view.addSubview(mainStackView)
+        // Use centerYAnchor with a constant, to be set in viewDidLayoutSubviews
+        let centerY = mainStackView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        centerY.priority = UILayoutPriority.defaultHigh
+        mainStackViewCenterYConstraint = centerY
+        NSLayoutConstraint.activate([
+            centerY,
+            mainStackView.topAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
+            mainStackView.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
+            mainStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            mainStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24)
         ])
     }
     
@@ -268,6 +354,7 @@ class MainViewController: UIViewController {
         clockInContainer.alpha = 0
         appSelectionContainer.alpha = 0
         timeSavedLabel.alpha = 0
+        streakContainer.alpha = 0
         
         // Animate each element with a delay
         UIView.animate(withDuration: 0.5, delay: 0.1, options: [], animations: {
@@ -286,12 +373,19 @@ class MainViewController: UIViewController {
         UIView.animate(withDuration: 0.5, delay: 0.7, options: [], animations: {
             self.timeSavedLabel.alpha = 1
         })
+        
+        UIView.animate(withDuration: 0.5, delay: 0.9, options: [], animations: {
+            self.streakContainer.alpha = 1
+        })
     }
     
     // MARK: - Action Methods
     @objc private func clockInContainerTapped() {
         // Provide haptic feedback
         impactFeedback.impactOccurred(intensity: 0.8)
+        
+        // Print device usage data to console
+        StatsManager.shared.printAppGroupUsageData()
         
         // Begin NFC scanning
         nfcController.beginScanning()
@@ -300,44 +394,12 @@ class MainViewController: UIViewController {
     }
     
     @objc private func appSelectionButtonTapped() {
-        // Provide haptic feedback
-        selectionFeedback.selectionChanged()
-        
-        // Create a binding for the selection
-        let selection = FamilyActivitySelection()
-        familyActivitySelection = selection
-        
-        // Create a simple SwiftUI view for app selection
-        let pickerView = FamilyActivityPicker(selection: Binding<FamilyActivitySelection>(
-            get: { self.familyActivitySelection },
-            set: { self.familyActivitySelection = $0 }
+        let pickerSheet = ActivityPickerSheet(selection: Binding(
+            get: { self.model.selectionToDiscourage },
+            set: { self.model.selectionToDiscourage = $0 }
         ))
-        
-        // Wrap in a navigation view with done button
-        let contentView = NavigationView {
-            pickerView
-                .navigationBarTitle("Select Apps", displayMode: .inline)
-                .navigationBarItems(trailing: Button("Done") {
-                    self.dismiss(animated: true) {
-                        // Update the app blocking service with the selected apps
-                        AppBlockingService.shared.setAppsToBlock(self.familyActivitySelection)
-                        
-                        // Set flag that apps have been selected
-                        UserDefaults.standard.set(true, forKey: "hasAppsSelected")
-                        
-                        // Provide success haptic feedback
-                        self.notificationFeedback.notificationOccurred(.success)
-                        
-                        // Update UI
-                        self.updateUI()
-                    }
-                })
-        }
-        .environment(\.colorScheme, .light)
-        
-        let controller = UIHostingController(rootView: contentView)
-        controller.modalPresentationStyle = .fullScreen
-        present(controller, animated: true)
+        let hostingController = UIHostingController(rootView: pickerSheet)
+        present(hostingController, animated: true)
     }
     
     // MARK: - Helper Methods
@@ -351,8 +413,8 @@ class MainViewController: UIViewController {
            let subtitleLabel = textStack.arrangedSubviews.last as? UILabel {
             
             // Update clock in button
-            let clockInTitle = isActive ? "Clock Out" : "Clock In"
-            let clockInSubtitle = isActive ? "End your focus session" : "Start tracking your focus session"
+            let clockInTitle = isActive ? "clock out" : "clock in"
+            let clockInSubtitle = isActive ? "end your focus session" : "start tracking your focus session"
             
             titleLabel.text = clockInTitle
             subtitleLabel.text = clockInSubtitle
@@ -373,13 +435,38 @@ class MainViewController: UIViewController {
         // Update app selection button
         // Fixed: Use UserDefaults to track if apps are selected instead of checking isEmpty
         let hasSelectedApps = AppBlockingService.shared.isFocusModeActive() || UserDefaults.standard.bool(forKey: "hasAppsSelected")
-        appSelectionButton.setTitle(hasSelectedApps ? "Apps selected" : "No apps selected", for: .normal)
+        appSelectionButton.setTitle(hasSelectedApps ? "apps selected" : "no apps selected", for: .normal)
         
         // Update time saved label
         let timeSaved = StatsManager.shared.totalTimeSavedToday
         let hours = timeSaved / 60
         let minutes = timeSaved % 60
-        timeSavedLabel.text = "Time Saved Today: \(hours)h \(minutes)m"
+        timeSavedLabel.text = "time saved today: \(hours)h \(minutes)m"
+        // Update streak display
+        let currentStreak = StatsManager.shared.currentStreak
+        streakDisplayLabel.text = "streak: \(currentStreak) days"
+        // Update goal display with current goal
+        let currentGoal = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
+        let goalHours = currentGoal / 60
+        let goalMinutes = currentGoal % 60
+        goalDisplayLabel.text = "goal: \(goalHours)h \(goalMinutes)m"
+    }
+    
+    // MARK: - Goal Management
+    @objc private func goalButtonTapped() {
+        let goalEditor = GoalEditorViewController()
+        goalEditor.delegate = self
+        goalEditor.modalPresentationStyle = .overFullScreen
+        goalEditor.modalTransitionStyle = .crossDissolve
+        present(goalEditor, animated: true)
+    }
+}
+
+// MARK: - GoalEditorDelegate
+extension MainViewController: GoalEditorDelegate {
+    func goalEditor(_ editor: GoalEditorViewController, didSetGoal goalMinutes: Int) {
+        UserDefaults.standard.set(goalMinutes, forKey: "dailyGoalMinutes")
+        updateUI() // Refresh the display
     }
 }
 
@@ -400,19 +487,16 @@ extension MainViewController: NFCControllerDelegate {
             // Start focus session in stats manager
             StatsManager.shared.startFocusSession()
             
-            // Show success notification
-            showNotification(message: "Focus mode activated", type: .success)
+            // Update UI
+            updateUI()
         } else {
             // Focus mode was deactivated
             // End focus session in stats manager
             StatsManager.shared.endFocusSession()
             
-            // Show success notification
-            showNotification(message: "Focus mode deactivated", type: .success)
+            // Update UI
+            updateUI()
         }
-        
-        // Update UI
-        updateUI()
     }
     
     func didDetectTagWithID(tagID: String) {

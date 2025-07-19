@@ -48,7 +48,7 @@ struct AppDetailView: View {
             // Stats with animations
             HStack(spacing: Constants.Layout.largeSpacing) {
                 VStack {
-                    Text(Constants.formatMinutesToHoursAndMinutes(Int(app.timeSaved / 60)))
+                    Text(Constants.formatMinutesToHoursAndMinutes(Int(app.duration / 60)))
                         .font(Constants.Fonts.title3SwiftUI())
                         .foregroundColor(Constants.Colors.textSwiftUI)
                         .opacity(animateChart ? 1.0 : 0.0)

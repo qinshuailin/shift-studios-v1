@@ -32,7 +32,7 @@ class AppUsageTracker {
 
     func getBlockedDurations() -> [AppUsageData] {
         return totalBlockedTime.map { (bundleID, time) in
-            AppUsageData(bundleID: bundleID, name: extractName(from: bundleID), timeSaved: time)
+            AppUsageData(bundleID: bundleID, name: extractName(from: bundleID), duration: time)
         }
     }
 

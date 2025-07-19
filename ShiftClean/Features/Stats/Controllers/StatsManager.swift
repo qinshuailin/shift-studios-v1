@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import ActivityKit
 
 class StatsManager: ObservableObject {
     static let shared = StatsManager()
@@ -19,6 +20,7 @@ class StatsManager: ObservableObject {
     @Published var focusModeStartTime: Date? = nil
     @Published var totalFocusModeTime: TimeInterval = 0
     @Published var lastFocusSession: FocusSession? = nil
+    @Published var lastUpdated: Date? = nil
     
     private let userDefaults = UserDefaults.standard
     private let focusSessionsKey = "focusSessionsKey"
@@ -29,16 +31,25 @@ class StatsManager: ObservableObject {
     private let hourlyUsageKey = "hourlyUsageKey"
     private let focusModeActiveKey = "focusModeActiveKey"
     private let focusScoreKey = "focusScoreKey"
+    private let appGroupID = "group.com.ericqin.shift" // Use your actual App Group ID
+    
+    private var refreshTimer: Timer?
+    private var liveActivityTimer: Timer?
+    private let appGroupUsageKey = "AppUsageData" // Ensure this matches the extension's key
     
     private init() {
         loadData()
+        startAutoRefresh()
     }
     
     func loadData() {
-        // Load real data or mock data for development
+        // Use selection from MyModel
+        let selection = MyModel.shared.selectionToDiscourage
+        print("[StatsManager] Current selection to discourage: \(selection)")
+        // Load real data from App Group
+        loadAppGroupUsageData()
         totalFocusTime = getDailyFocusMinutes()
         currentStreak = getCurrentStreak()
-        appUsageData = getMostBlockedApps()
         weeklyData = getWeeklyFocusMinutes()
         categoryUsageData = getUsageByCategory()
         pickupsData = getAppPickups()
@@ -51,52 +62,25 @@ class StatsManager: ObservableObject {
             focusScore = calculateFocusScore()
             userDefaults.set(focusScore, forKey: focusScoreKey)
         }
-        
-        // If no real data, use mock data for development
-        if appUsageData.isEmpty {
-            loadMockData()
-        }
+        lastUpdated = Date()
+        // Debug: Print usage data from App Group
+        printAppGroupUsageData()
     }
-    
-    func loadMockData() {
-        // Mock data for development and testing
-        totalFocusTime = 185
-        currentStreak = 3
-        focusScore = 8.5
-        
-        appUsageData = [
-            AppUsageData(bundleID: "com.instagram.ios", name: "Instagram", timeSaved: 3600, category: "Social", numberOfPickups: 15, numberOfNotifications: 8),
-            AppUsageData(bundleID: "com.tiktok.ios", name: "TikTok", timeSaved: 2400, category: "Social", numberOfPickups: 10, numberOfNotifications: 5),
-            AppUsageData(bundleID: "com.google.ios.youtube", name: "YouTube", timeSaved: 1800, category: "Entertainment", numberOfPickups: 7, numberOfNotifications: 3),
-            AppUsageData(bundleID: "com.twitter.ios", name: "Twitter", timeSaved: 1200, category: "Social", numberOfPickups: 8, numberOfNotifications: 12)
-        ]
-        
-        weeklyData = [120, 180, 210, 150, 90, 240, 185]
-        
-        categoryUsageData = [
-            CategoryUsageData(category: "Social", apps: [appUsageData[0], appUsageData[1], appUsageData[3]]),
-            CategoryUsageData(category: "Entertainment", apps: [appUsageData[2]]),
-            CategoryUsageData(category: "Productivity", apps: [])
-        ]
-        
-        pickupsData = [
-            ("Instagram", 15),
-            ("TikTok", 10),
-            ("YouTube", 5)
-        ]
-        
-        hourlyUsageData = [
-            ("8 AM", 15),
-            ("10 AM", 30),
-            ("12 PM", 20),
-            ("2 PM", 45),
-            ("4 PM", 25),
-            ("6 PM", 10),
-            ("8 PM", 35)
-        ]
-        
-        firstPickupTime = Date().addingTimeInterval(-3600 * 8) // 8 hours ago
-        longestSession = DateInterval(start: Date().addingTimeInterval(-3600), duration: 1800)
+
+    private func loadAppGroupUsageData() {
+        let defaults = UserDefaults(suiteName: appGroupID)
+        if let data = defaults?.data(forKey: "usageData"),
+           let usageDict = try? JSONDecoder().decode([String: TimeInterval].self, from: data) {
+            print("[Main App] Read usage data from app group: \(usageDict)")
+            // Map [String: TimeInterval] to [AppUsageData]
+            self.appUsageData = usageDict.map { (name, duration) in
+                AppUsageData(bundleID: nil, name: name, duration: duration)
+            }.sorted { $0.duration > $1.duration }
+        } else {
+            print("[Main App] No usage data found or failed to decode.")
+            self.appUsageData = []
+        }
+        lastUpdated = Date()
     }
     
     // MARK: - Session Tracking
@@ -115,6 +99,14 @@ class StatsManager: ObservableObject {
         userDefaults.set(true, forKey: focusModeActiveKey)
         isFocusModeActive = true
         focusModeStartTime = session.startTime
+        // Start Live Activity
+        let goalMinutes = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
+        FocusLiveActivityManager.shared.start(goalMinutes: goalMinutes > 0 ? goalMinutes : 60)
+        // Start timer to update Live Activity every second
+        liveActivityTimer?.invalidate()
+        liveActivityTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.updateLiveActivityTimer()
+        }
         NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeEnabled), object: nil)
     }
     
@@ -140,6 +132,12 @@ class StatsManager: ObservableObject {
         isFocusModeActive = false
         self.lastFocusSession = lastSession
         focusModeStartTime = nil
+        
+        // End Live Activity
+        let elapsed = lastSession.endTime?.timeIntervalSince(lastSession.startTime) ?? 0
+        FocusLiveActivityManager.shared.end(finalElapsedSeconds: Int(elapsed))
+        liveActivityTimer?.invalidate()
+        liveActivityTimer = nil
         
         // Update focus score
         focusScore = calculateFocusScore()
@@ -237,7 +235,7 @@ class StatsManager: ObservableObject {
     
     func getMostBlockedApps() -> [AppUsageData] {
         return AppUsageTracker.shared.getBlockedDurations()
-            .sorted(by: { $0.timeSaved > $1.timeSaved })
+            .sorted(by: { $0.duration > $1.duration })
             .prefix(5)
             .map { $0 }
     }
@@ -362,5 +360,56 @@ class StatsManager: ObservableObject {
             userDefaults.set(todayKey, forKey: lastFocusDayKey)
             currentStreak = 1
         }
+    }
+    
+    private func startAutoRefresh() {
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            self?.loadAppGroupUsageData()
+        }
+    }
+    
+    private func reloadAppGroupUsageData() {
+        let defaults = UserDefaults(suiteName: appGroupID)
+        if let data = defaults?.data(forKey: appGroupUsageKey),
+           let usage = try? JSONDecoder().decode([AppUsageData].self, from: data) {
+            DispatchQueue.main.async {
+                self.appUsageData = usage
+            }
+        }
+    }
+    
+    // Debug: Read and print per-app usage data from App Group
+    func printAppGroupUsageData() {
+        if let sharedDefaults = UserDefaults(suiteName: appGroupID),
+           let jsonData = sharedDefaults.data(forKey: "usageData"),
+           let usageData = try? JSONDecoder().decode([String: TimeInterval].self, from: jsonData) {
+            print("[App Group] Usage data:", usageData)
+        } else {
+            print("[App Group] No usage data found or failed to decode.")
+        }
+    }
+    
+    // Helper to update the Live Activity timer
+    private func updateLiveActivityTimer() {
+        guard let start = focusModeStartTime else { return }
+        let elapsed = Int(Date().timeIntervalSince(start))
+        FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+    }
+}
+
+extension StatsManager {
+    var timeSavedString: String {
+        TimeInterval(totalFocusModeTime).formattedDuration()
+    }
+    var timeWastedString: String {
+        let wasted = appUsageData.reduce(0) { $0 + $1.duration }
+        return TimeInterval(wasted).formattedDuration()
+    }
+    var progressToGoal: Double {
+        guard dailyGoal > 0 else { return 0 }
+        return min(totalFocusModeTime / Double(dailyGoal * 60), 1.0)
+    }
+    var mostUsedApps: [AppUsageData] {
+        appUsageData.sorted { $0.duration > $1.duration }
     }
 }

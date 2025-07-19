@@ -2,14 +2,36 @@ import UIKit
 import FamilyControls
 import DeviceActivity
 
+extension DeviceActivityName {
+    static let daily = Self("daily")
+    static let totalActivity = Self("Total Activity")
+}
+
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
+        // Request FamilyControls authorization using .individual (Apple methodology)
+        Task {
+            do {
+                try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                print("[AppDelegate] FamilyControls authorization success (individual)")
+            } catch {
+                print("[AppDelegate] FamilyControls authorization error: \(error)")
+            }
+        }
+        
         // Request authorization for device activity tracking
-        requestDeviceActivityAuthorization()
+        Task {
+            let granted = await DeviceActivityManager.shared.requestAuthorization()
+            if granted {
+                DeviceActivityManager.shared.scheduleUsageTracking()
+                DeviceActivityManager.shared.scheduleTestUsageTracking() // Debug: schedule short test interval
+            }
+        }
+        scheduleDeviceActivityReport() // Schedule device activity monitoring on launch
         
         return true
     }
@@ -57,6 +79,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Save any pending stats
         if StatsManager.shared.isFocusModeActive {
             StatsManager.shared.endFocusSession()
+        }
+    }
+
+    // MARK: - Device Activity Scheduling
+    func scheduleDeviceActivityReport() {
+        let center = DeviceActivityCenter()
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+        do {
+            try center.startMonitoring(.totalActivity, during: schedule)
+            print("Device activity monitoring started.")
+        } catch {
+            print("Failed to start monitoring: \(error)")
         }
     }
 }

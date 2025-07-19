@@ -3,6 +3,11 @@ import FamilyControls
 import DeviceActivity
 import ManagedSettings
 
+// Add extension for named store
+extension ManagedSettingsStore.Name {
+    static let social = Self("social")
+}
+
 class DeviceActivityManager {
     static let shared = DeviceActivityManager()
     
@@ -23,87 +28,11 @@ class DeviceActivityManager {
         }
     }
     
-    // Fetch real app usage data
+    // In the main app, you cannot fetch historical device activity data.
+    // This must be done in the Device Activity Report Extension.
     func fetchActivityData() async -> [AppUsageData] {
-        // If we have authorization, get real data
-        if center.authorizationStatus == .approved {
-            let apps = await fetchMostUsedApps()
-            if !apps.isEmpty {
-                return apps
-            }
-        }
-        
-        // Fallback to mock data if needed
-        return getMockData()
-    }
-    
-    // Get real app usage data from the system
-    private func fetchMostUsedApps() async -> [AppUsageData] {
-        var appUsageData: [AppUsageData] = []
-        
-        // This would use the actual DeviceActivity API in a real implementation
-        // For now, we'll simulate the data structure but with dynamic app detection
-        
-        // Get installed apps (this would use real API in production)
-        let installedApps = await getInstalledApps()
-        
-        for app in installedApps.prefix(10) {
-            let timeSaved = Double.random(in: 600...7200) // Random time between 10min-2hrs
-            let pickups = Int.random(in: 3...30)
-            let notifications = Int.random(in: 0...20)
-            
-            appUsageData.append(
-                AppUsageData(
-                    bundleID: app.bundleID,
-                    name: app.name,
-                    timeSaved: timeSaved,
-                    category: app.category,
-                    numberOfPickups: pickups,
-                    numberOfNotifications: notifications
-                )
-            )
-        }
-        
-        return appUsageData
-    }
-    
-    // Simulate getting installed apps (would use real API in production)
-    private func getInstalledApps() async -> [(bundleID: String, name: String, category: String)] {
-        // In a real implementation, this would query the system for installed apps
-        // For now, we'll return a diverse set of apps that might be on a typical device
-        return [
-            ("com.instagram.ios", "Instagram", "Social"),
-            ("com.tiktok.ios", "TikTok", "Social"),
-            ("com.facebook.Facebook", "Facebook", "Social"),
-            ("com.atebits.Tweetie2", "Twitter", "Social"),
-            ("com.burbn.instagram", "Instagram", "Social"),
-            ("com.google.ios.youtube", "YouTube", "Entertainment"),
-            ("com.netflix.Netflix", "Netflix", "Entertainment"),
-            ("com.spotify.client", "Spotify", "Entertainment"),
-            ("com.apple.mobileslideshow", "Photos", "Utilities"),
-            ("com.apple.camera", "Camera", "Utilities"),
-            ("com.apple.Maps", "Maps", "Navigation"),
-            ("com.google.Maps", "Google Maps", "Navigation"),
-            ("com.ubercab.UberClient", "Uber", "Transportation"),
-            ("com.toyopagroup.picaboo", "Snapchat", "Social"),
-            ("com.amazon.Amazon", "Amazon", "Shopping"),
-            ("com.google.chrome.ios", "Chrome", "Productivity"),
-            ("com.apple.mobilesafari", "Safari", "Productivity"),
-            ("com.apple.MobileSMS", "Messages", "Communication"),
-            ("com.apple.mobilephone", "Phone", "Communication"),
-            ("com.apple.mobilemail", "Mail", "Productivity")
-        ]
-    }
-    
-    // Mock data for testing
-    private func getMockData() -> [AppUsageData] {
-        return [
-            AppUsageData(bundleID: "com.instagram.ios", name: "Instagram", timeSaved: 3600, category: "Social", numberOfPickups: 15, numberOfNotifications: 8),
-            AppUsageData(bundleID: "com.twitter.ios", name: "Twitter", timeSaved: 2400, category: "Social", numberOfPickups: 10, numberOfNotifications: 12),
-            AppUsageData(bundleID: "com.tiktok.ios", name: "TikTok", timeSaved: 5400, category: "Entertainment", numberOfPickups: 20, numberOfNotifications: 5),
-            AppUsageData(bundleID: "com.google.ios.youtube", name: "YouTube", timeSaved: 1800, category: "Entertainment", numberOfPickups: 7, numberOfNotifications: 3),
-            AppUsageData(bundleID: "com.facebook.Facebook", name: "Facebook", timeSaved: 3000, category: "Social", numberOfPickups: 12, numberOfNotifications: 15)
-        ]
+        // Not available in the main app. Only available in the extension.
+        return []
     }
     
     func getFirstPickupTime() -> Date? {
@@ -122,5 +51,75 @@ class DeviceActivityManager {
         userDefaults.removeObject(forKey: firstPickupKey)
         userDefaults.removeObject(forKey: "\(longestActivityKey)_start")
         userDefaults.removeObject(forKey: "\(longestActivityKey)_end")
+    }
+    
+    // Schedules the DeviceActivity report extension to run daily
+    func scheduleUsageTracking() {
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+        let center = DeviceActivityCenter()
+        do {
+            try center.startMonitoring(DeviceActivityName("daily"), during: schedule)
+            print("[DeviceActivityManager] DeviceActivity monitoring scheduled for daily.")
+        } catch {
+            print("[DeviceActivityManager] Failed to schedule DeviceActivity monitoring: \(error)")
+        }
+    }
+
+    // Schedules a short test interval for debugging extension triggering (minimum allowed by iOS is ~15 minutes)
+    func scheduleTestUsageTracking() {
+        let now = Date()
+        let inFifteenMinutes = now.addingTimeInterval(15 * 60)
+        let start = Calendar.current.dateComponents([.hour, .minute], from: now)
+        let end = Calendar.current.dateComponents([.hour, .minute], from: inFifteenMinutes)
+        let schedule = DeviceActivitySchedule(
+            intervalStart: start,
+            intervalEnd: end,
+            repeats: false
+        )
+        let center = DeviceActivityCenter()
+        do {
+            try center.startMonitoring(DeviceActivityName("test"), during: schedule)
+            print("[DeviceActivityManager] DeviceActivity monitoring scheduled for 15-minute test interval.")
+        } catch {
+            print("[DeviceActivityManager] Failed to schedule test DeviceActivity monitoring: \(error)")
+        }
+    }
+
+    func printExtensionDebugLog() {
+        if let logURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.ericqin.shift")?.appendingPathComponent("debug.txt"),
+           let logContents = try? String(contentsOf: logURL) {
+            print("[Extension Debug Log]\n" + logContents)
+        } else {
+            print("[Extension Debug Log] No log file found.")
+        }
+    }
+}
+
+class ShiftDeviceActivityMonitor: DeviceActivityMonitor {
+    // Use a named store for social restrictions (Apple methodology)
+    let socialStore = ManagedSettingsStore(named: .social)
+    // Provide a socialCategoryToken (example: first discouraged category)
+    var socialCategoryToken: ActivityCategoryToken? {
+        MyModel.shared.selectionToDiscourage.categoryTokens.first
+    }
+    override func intervalDidStart(for activity: DeviceActivityName) {
+        super.intervalDidStart(for: activity)
+        print("[MonitorExtension] intervalDidStart for \(activity.rawValue)")
+        // Clear all restrictions at the start of the interval
+        socialStore.clearAllSettings()
+    }
+    override func intervalDidEnd(for activity: DeviceActivityName) {
+        super.intervalDidEnd(for: activity)
+        print("[MonitorExtension] intervalDidEnd for \(activity.rawValue)")
+        // Apply social restrictions at the end of the interval
+        // Example: shield a social category (replace with your actual token)
+        if let socialCategory = socialCategoryToken {
+            socialStore.shield.applicationCategories = ShieldSettings.ActivityCategoryPolicy.specific([socialCategory])
+            socialStore.shield.webDomainCategories = ShieldSettings.ActivityCategoryPolicy.specific([socialCategory])
+        }
     }
 }

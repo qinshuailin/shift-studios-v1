@@ -18,8 +18,8 @@ extension StatsManager {
     
     // Add a property for total time saved today
     var totalTimeSavedToday: Int {
-        // For demo purposes, return a simulated value
-        // In a real app, this would calculate from actual usage data
-        return Int.random(in: 60...120) // Random value between 1h and 2h
+        // Calculate from actual usage data
+        // Example: sum focus minutes for today
+        return totalFocusTime
     }
 }
