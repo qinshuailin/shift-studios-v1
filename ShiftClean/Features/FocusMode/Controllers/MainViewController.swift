@@ -454,7 +454,7 @@ class MainViewController: UIViewController {
         let currentStreak = StatsManager.shared.currentStreak
         streakDisplayLabel.text = "streak: \(currentStreak) days"
         // Update goal display with current goal
-        let currentGoal = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
+        let currentGoal = StatsManager.shared.dailyGoal
         let goalHours = currentGoal / 60
         let goalMinutes = currentGoal % 60
         goalDisplayLabel.text = "goal: \(goalHours)h \(goalMinutes)m"
