@@ -1,5 +1,4 @@
 ---
-description:
-globs:
-alwaysApply: false
+alwaysApply: true
+description: Before responding to any prompt, read and reflect on all files in the current project folder, including source code files, configuration files, scripts, utilities, and helper modules. Your response must always be grounded in full awareness of the project’s existing codebase, structure, dependencies, naming conventions, and logic. Do not suggest fixes, changes, or additions without first evaluating how they integrate with or affect the rest of the project. Ensure all responses are contextually aligned with what’s already implemented, maintaining architectural and stylistic consistency across the entire codebase. You are also banned from running any commands which delete things unless you are permitted. 
 ---
