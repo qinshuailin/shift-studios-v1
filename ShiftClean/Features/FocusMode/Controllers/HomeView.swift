@@ -4,7 +4,9 @@ import FamilyControls
 class NFCDelegateHandler: NSObject, ObservableObject, NFCControllerDelegate {
     @Published var didScanTag: Bool = false
     func didScanNFCTag() {
-        AppBlockingService.shared.toggleFocusMode()
+        if !AppBlockingService.shared.isFocusModeActive() {
+            AppBlockingService.shared.activateFocusMode()
+        }
         didScanTag = true
     }
     func didToggleFocusMode() {

@@ -52,6 +52,8 @@ class AppBlockingService: ObservableObject {
     /// Activates focus mode directly
     func activateFocusMode() {
         if !isFocusModeActive() {
+            // Always apply the latest app selection before enabling focus mode
+            setAppsToBlock(MyModel.shared.selectionToDiscourage)
             enableFocusMode()
             StatsManager.shared.startFocusSession()
             // Fixed post method call
@@ -95,7 +97,7 @@ class AppBlockingService: ObservableObject {
     
     private func enableFocusMode() {
         userDefaults.set(true, forKey: focusModeKey)
-        
+        StatsManager.shared.isFocusModeActive = true
         // Apply app restrictions if apps are selected
         if let selection = getSelectedApps() {
             applyAppRestrictions(selection)
@@ -104,7 +106,7 @@ class AppBlockingService: ObservableObject {
     
     private func disableFocusMode() {
         userDefaults.set(false, forKey: focusModeKey)
-        
+        StatsManager.shared.isFocusModeActive = false
         // Remove all app restrictions
         store.shield.applications = nil
     }
