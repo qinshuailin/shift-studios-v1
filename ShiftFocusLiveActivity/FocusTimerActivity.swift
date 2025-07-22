@@ -8,7 +8,7 @@ struct FocusTimerLiveActivityView: View {
     let context: ActivityViewContext<FocusTimerAttributes>
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 8) { 
             Text(context.attributes.goalMinutes > 0 ? "focus mode" : "session ended")
                 .font(.headline)
                 .foregroundColor(.black)
