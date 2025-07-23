@@ -36,34 +36,25 @@ class FocusLiveActivityManager {
 
     // Update with throttling to prevent too many updates
     func update(elapsedSeconds: Int) {
-        // More aggressive throttling - update every 5 seconds minimum
-        if let lastUpdate = lastUpdateTime, Date().timeIntervalSince(lastUpdate) < 4.9 {
-            return // Skip if less than 5 seconds since last update
+        // Throttle updates to prevent overwhelming the system
+        if let lastUpdate = lastUpdateTime, Date().timeIntervalSince(lastUpdate) < 0.9 {
+            return // Skip if less than 0.9 seconds since last update
         }
-        
         Task { @MainActor in
             guard let activity = self.activity else {
                 print("[FocusLiveActivityManager] No activity to update")
                 return
             }
-            
-            // Create state with explicit stale date to keep it fresh
             let state = FocusTimerAttributes.ContentState(elapsedSeconds: elapsedSeconds, isActive: true)
-            let staleDate = Date().addingTimeInterval(30) // Keep fresh for 30 seconds
-            
             do {
-                await activity.update(.init(state: state, staleDate: staleDate))
+                await activity.update(using: state)
                 self.lastUpdateTime = Date()
-                
-                // Log every 30 seconds to track updates
-                if elapsedSeconds % 30 == 0 {
-                    print("[FocusLiveActivityManager] Updated Live Activity: \(elapsedSeconds)s (staleDate: \(staleDate))")
+                // Only log every 10 seconds to avoid spam
+                if elapsedSeconds % 10 == 0 {
+                    print("[FocusLiveActivityManager] Updated Live Activity: \(elapsedSeconds)s")
                 }
             } catch {
                 print("[FocusLiveActivityManager] Failed to update Live Activity: \(error)")
-                
-                // If update fails, try to refresh the activity
-                await refreshActivity(goalMinutes: activity.attributes.goalMinutes, currentSeconds: elapsedSeconds)
             }
         }
     }
@@ -119,39 +110,6 @@ class FocusLiveActivityManager {
     func printAllLiveActivities() {
         for activity in Activity<FocusTimerAttributes>.activities {
             print("Live Activity: \(activity.id), state: \(activity.activityState), attributes: \(activity.attributes)")
-        }
-    }
-    
-    // Refresh activity if it becomes unresponsive
-    private func refreshActivity(goalMinutes: Int, currentSeconds: Int) async {
-        print("[FocusLiveActivityManager] Refreshing unresponsive Live Activity...")
-        
-        // End current activity
-        if let activity = self.activity {
-            if #available(iOS 16.2, *) {
-                await activity.end(.init(state: .init(elapsedSeconds: currentSeconds, isActive: false), staleDate: nil), dismissalPolicy: .immediate)
-            } else {
-                await activity.end(using: .init(elapsedSeconds: currentSeconds, isActive: false), dismissalPolicy: .immediate)
-            }
-        }
-        
-        // Wait a moment
-        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-        
-        // Start new activity with current progress
-        let initialState = FocusTimerAttributes.ContentState(elapsedSeconds: currentSeconds, isActive: true)
-        let attributes = FocusTimerAttributes(goalMinutes: goalMinutes)
-        
-        do {
-            self.activity = try Activity<FocusTimerAttributes>.request(
-                attributes: attributes,
-                content: .init(state: initialState, staleDate: Date().addingTimeInterval(30)),
-                pushType: nil
-            )
-            self.lastUpdateTime = Date()
-            print("[FocusLiveActivityManager] Successfully refreshed Live Activity with \(currentSeconds)s elapsed")
-        } catch {
-            print("[FocusLiveActivityManager] Failed to refresh Live Activity: \(error)")
         }
     }
 } 

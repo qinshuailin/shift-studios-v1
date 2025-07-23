@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 import ActivityKit
-import UIKit
 
 class StatsManager: ObservableObject {
     static let shared = StatsManager()
@@ -40,96 +39,10 @@ class StatsManager: ObservableObject {
     private var liveUpdateTimer: Timer? // NEW: Timer for live updates
     private let appGroupUsageKey = "AppUsageData"
     
-    // CRITICAL: Force reset all focus session state
-    private func forceResetFocusState() {
-        print("[StatsManager] === FORCE RESETTING FOCUS STATE ===")
-        
-        // Stop all timers
-        liveActivityTimer?.invalidate()
-        liveActivityTimer = nil
-        
-        // Clear all state
-        isFocusModeActive = false
-        focusModeStartTime = nil
-        
-        // Clear UserDefaults
-        userDefaults.set(false, forKey: focusModeActiveKey)
-        userDefaults.removeObject(forKey: "focusModeStartTime")
-        
-        // Sync with AppBlockingService (but don't call StatsManager methods to avoid recursion)
-        userDefaults.set(false, forKey: "focusModeActive")
-        
-        print("[StatsManager] Focus state completely reset")
-    }
-    
-    // MARK: - Initialization
-    init() {
-        print("[StatsManager] === STATSMANAGER INIT DEBUG ===")
-        
-        // Load focus mode state from UserDefaults
-        let savedFocusState = userDefaults.bool(forKey: focusModeActiveKey)
-        print("[StatsManager] Saved focus state from UserDefaults: \(savedFocusState)")
-        
-        // Check if there's a valid active session
-        if savedFocusState {
-            // Verify we actually have a start time
-            if let startTime = userDefaults.object(forKey: "focusModeStartTime") as? Date {
-                // Check if the session is recent (within 24 hours)
-                let timeSinceStart = Date().timeIntervalSince(startTime)
-                if timeSinceStart < 24 * 60 * 60 { // 24 hours
-                    print("[StatsManager] Restoring valid active session from \(startTime)")
-                    isFocusModeActive = true
-                    focusModeStartTime = startTime
-                    startLiveActivityTimer()
-                } else {
-                    print("[StatsManager] Session too old (\(timeSinceStart/3600) hours), clearing state")
-                    // Clear stale state
-                    userDefaults.set(false, forKey: focusModeActiveKey)
-                    userDefaults.removeObject(forKey: "focusModeStartTime")
-                    isFocusModeActive = false
-                    focusModeStartTime = nil
-                }
-            } else {
-                print("[StatsManager] No start time found for saved focus state, clearing state")
-                // Clear inconsistent state
-                userDefaults.set(false, forKey: focusModeActiveKey)
-                isFocusModeActive = false
-                focusModeStartTime = nil
-            }
-        } else {
-            print("[StatsManager] No active focus session found")
-            isFocusModeActive = false
-            focusModeStartTime = nil
-        }
-        
-        // CRITICAL: Synchronize with AppBlockingService state
-        let appBlockingActive = AppBlockingService.shared.isFocusModeActive()
-        if isFocusModeActive != appBlockingActive {
-            print("[StatsManager] ⚠️ State mismatch detected! StatsManager: \(isFocusModeActive), AppBlockingService: \(appBlockingActive)")
-            print("[StatsManager] Synchronizing to AppBlockingService state: \(appBlockingActive)")
-            isFocusModeActive = appBlockingActive
-            if !appBlockingActive {
-                focusModeStartTime = nil
-                userDefaults.set(false, forKey: focusModeActiveKey)
-                userDefaults.removeObject(forKey: "focusModeStartTime")
-            }
-        }
-        
-        // CRITICAL: Additional validation - if isFocusModeActive but no focusModeStartTime, reset everything
-        if isFocusModeActive && focusModeStartTime == nil {
-            print("[StatsManager] ⚠️ Invalid state: isFocusModeActive=true but no focusModeStartTime!")
-            print("[StatsManager] Force resetting to clean state...")
-            forceResetFocusState()
-        }
-        
-        print("[StatsManager] Final initialization state: isFocusModeActive=\(isFocusModeActive)")
-        print("[StatsManager] === END STATSMANAGER INIT DEBUG ===")
-        
-        // Continue with normal initialization
+    private init() {
         loadData()
         startAutoRefresh()
-        startLiveUpdates() // Start live updating
-        updateTotalTimeSavedToday()
+        startLiveUpdates() // NEW: Start live updating
     }
     
     func loadData() {
@@ -188,13 +101,9 @@ class StatsManager: ObservableObject {
             let currentSessionMinutes = Int(Date().timeIntervalSince(start) / 60)
             // Remove any cap or limit here
             total += currentSessionMinutes
-            print("[StatsManager] Live update: completed=\(totalFocusTime)min, current=\(currentSessionMinutes)min, total=\(total)min")
-        } else {
-            print("[StatsManager] Live update: completed=\(totalFocusTime)min, no active session, total=\(total)min")
         }
         // Only update if the value has actually changed to avoid unnecessary UI updates
         if totalTimeSavedToday != total {
-            print("[StatsManager] ✅ Updating totalTimeSavedToday from \(totalTimeSavedToday) to \(total)")
             DispatchQueue.main.async {
                 self.totalTimeSavedToday = total
                 // Post notification for UI updates
@@ -237,50 +146,31 @@ class StatsManager: ObservableObject {
             print("[StatsManager] Focus session already active, ignoring duplicate start")
             return
         }
-        
-        print("[StatsManager] Starting focus session...")
-        
         let session = FocusSession(startTime: Date())
         saveFocusSession(session)
         userDefaults.set(true, forKey: focusModeActiveKey)
-        userDefaults.set(session.startTime, forKey: "focusModeStartTime")
         isFocusModeActive = true
         focusModeStartTime = session.startTime
         // Immediately update the total time saved display
         updateTotalTimeSavedToday()
-        
-        // Start usage tracking for the main app
-        RealTimeUsageTracker.shared.startTracking(appName: "Shift")
-        print("[StatsManager] Started real-time usage tracking")
-        
         // Start Live Activity
         let goalMinutes = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
-        print("[StatsManager] Starting Live Activity with goal: \(goalMinutes > 0 ? goalMinutes : 60) minutes")
         FocusLiveActivityManager.shared.start(goalMinutes: goalMinutes > 0 ? goalMinutes : 60)
-        
-        // Start the live activity timer
-        startLiveActivityTimer()
-        
-        print("[StatsManager] Focus session started successfully")
+        // Start timer to update Live Activity every SECOND
+        liveActivityTimer?.invalidate()
+        liveActivityTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.updateLiveActivityTimer()
+        }
+        // CRITICAL: Add to main run loop to keep running in background
+        if let timer = liveActivityTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
+        NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeEnabled), object: nil)
     }
     
     func endFocusSession() {
-        print("[StatsManager] === END FOCUS SESSION DEBUG ===")
-        print("[StatsManager] Current isFocusModeActive: \(isFocusModeActive)")
-        
-        guard var sessions = getFocusSessions(), !sessions.isEmpty else { 
-            print("[StatsManager] No sessions found to end")
-            return 
-        }
-        guard isFocusModeActive else { 
-            print("[StatsManager] Focus mode not active, nothing to end")
-            return 
-        } // Prevent duplicate endings
-        
-        // Stop usage tracking
-        RealTimeUsageTracker.shared.stopTracking()
-        print("[StatsManager] Stopped real-time usage tracking")
-        
+        guard var sessions = getFocusSessions(), !sessions.isEmpty else { return }
+        guard isFocusModeActive else { return } // Prevent duplicate endings
         // Update the last session with end time
         var lastSession = sessions.removeLast()
         lastSession.endTime = Date()
@@ -293,32 +183,27 @@ class StatsManager: ObservableObject {
         }
         // FIXED: Only add to completed session time, don't double count
         if durationMinutes > 0 {
-            totalFocusTime += durationMinutes
-            print("[StatsManager] Adding \(durationMinutes) minutes to total, new total: \(totalFocusTime)")
+            updateDailyMinutes(adding: durationMinutes)
+            updateWeeklyMinutes(adding: durationMinutes)
+            updateHourlyUsage(adding: durationMinutes, at: lastSession.startTime)
         }
-        
+        // Save updated session
         sessions.append(lastSession)
         saveFocusSessions(sessions)
-        
-        // CRITICAL: Clear all state properly
         userDefaults.set(false, forKey: focusModeActiveKey)
-        userDefaults.removeObject(forKey: "focusModeStartTime") // Remove saved start time
         isFocusModeActive = false
+        self.lastFocusSession = lastSession
         focusModeStartTime = nil
-        
-        // Stop live activity timer
-        liveActivityTimer?.invalidate()
-        liveActivityTimer = nil
-        
         // End Live Activity
         let elapsedSeconds = lastSession.endTime?.timeIntervalSince(lastSession.startTime) ?? 0
         FocusLiveActivityManager.shared.end(finalElapsedSeconds: Int(elapsedSeconds))
-        print("[StatsManager] Ended Live Activity with \(Int(elapsedSeconds)) seconds")
-        
-        // Immediately update the total time saved display
+        liveActivityTimer?.invalidate()
+        liveActivityTimer = nil
+        // Update focus score
+        focusScore = calculateFocusScore()
+        userDefaults.set(focusScore, forKey: focusScoreKey)
+        // Update total time saved today to reflect completed session
         updateTotalTimeSavedToday()
-        print("[StatsManager] === END FOCUS SESSION DEBUG COMPLETE ===")
-        
         NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeDisabled), object: nil)
     }
     
@@ -542,13 +427,11 @@ class StatsManager: ObservableObject {
     // Make sure this method is robust
     private func updateLiveActivityTimer() {
         guard isFocusModeActive, let start = focusModeStartTime else {
-            print("[StatsManager] ⚠️ updateLiveActivityTimer called but focus mode not active or no start time")
             liveActivityTimer?.invalidate()
             liveActivityTimer = nil
             return
         }
         let elapsed = Int(Date().timeIntervalSince(start))
-        print("[StatsManager] Updating Live Activity with elapsed time: \(elapsed)s")
         FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
     }
     
@@ -558,26 +441,6 @@ class StatsManager: ObservableObject {
             let elapsed = Int(Date().timeIntervalSince(start))
             FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
         }
-    }
-    
-    // MARK: - Live Activity Timer Management
-    private func startLiveActivityTimer() {
-        print("[StatsManager] Starting Live Activity timer...")
-        // Stop any existing timer
-        liveActivityTimer?.invalidate()
-        
-        // Start timer to update Live Activity every 5 SECONDS (more iOS-friendly)
-        liveActivityTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            self?.updateLiveActivityTimer()
-        }
-        
-        // CRITICAL: Add to main run loop to keep running in background
-        if let timer = liveActivityTimer {
-            RunLoop.main.add(timer, forMode: .common)
-        }
-        
-        print("[StatsManager] Live Activity timer started (5-second intervals)")
-        NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeEnabled), object: nil)
     }
     
     deinit {

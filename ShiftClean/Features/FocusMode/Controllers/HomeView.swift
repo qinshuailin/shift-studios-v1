@@ -4,13 +4,20 @@ import FamilyControls
 class NFCDelegateHandler: NSObject, ObservableObject, NFCControllerDelegate {
     @Published var didScanTag: Bool = false
     func didScanNFCTag() {
-        if !AppBlockingService.shared.isFocusModeActive() {
+        if AppBlockingService.shared.isFocusModeActive() {
+            AppBlockingService.shared.deactivateFocusMode()
+        } else {
             AppBlockingService.shared.activateFocusMode()
         }
         didScanTag = true
     }
     func didToggleFocusMode() {
-        // Implement if needed
+        let isActive = AppBlockingService.shared.isFocusModeActive()
+        if isActive {
+            StatsManager.shared.startFocusSession()
+        } else {
+            StatsManager.shared.endFocusSession()
+        }
     }
     func didDetectTagWithID(tagID: String) {
         // Implement if needed
@@ -83,10 +90,11 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity)
                     .background(Color.clear)
                     Divider()
-                    // Section 3
+                    // Clock In/Out button
                     Button(action: {
                         clockInPressed = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            NFCController.shared.delegate = nfcDelegate
                             NFCController.shared.beginScanning()
                             withAnimation(.easeInOut(duration: 0.15)) {
                                 clockInPressed = false
@@ -107,6 +115,7 @@ struct HomeView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     Divider()
+                    // Edit Apps button
                     Button(action: {
                         editAppsPressed = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {

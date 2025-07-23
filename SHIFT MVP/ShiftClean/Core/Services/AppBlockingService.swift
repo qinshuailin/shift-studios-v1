@@ -95,22 +95,22 @@ class AppBlockingService: ObservableObject {
     
     private func enableFocusMode() {
         userDefaults.set(true, forKey: focusModeKey)
+        
         // Apply app restrictions if apps are selected
         if let selection = getSelectedApps() {
             applyAppRestrictions(selection)
         }
     }
     
-    // Made public for state synchronization
-    func disableFocusMode() {
+    private func disableFocusMode() {
         userDefaults.set(false, forKey: focusModeKey)
+        
         // Remove all app restrictions
         store.shield.applications = nil
     }
     
     private func applyAppRestrictions(_ selection: FamilyActivitySelection) {
         // Set the selected applications to be shielded
-        print("[AppBlockingService] Applying shield to: \(selection.applicationTokens)")
         store.shield.applications = selection.applicationTokens
     }
 }

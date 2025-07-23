@@ -29,11 +29,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             if granted {
                 DeviceActivityManager.shared.scheduleUsageTracking()
                 DeviceActivityManager.shared.scheduleTestUsageTracking() // Debug: schedule short test interval
-                // Initialize MyModel monitoring for device activity
-                MyModel.shared.initiateMonitoring()
-                // CRITICAL: Clear any problematic system restrictions
-                MyModel.shared.clearAllSystemRestrictions()
-                print("[AppDelegate] Device activity tracking initialized and system restrictions cleared")
             }
         }
         scheduleDeviceActivityReport() // Schedule device activity monitoring on launch

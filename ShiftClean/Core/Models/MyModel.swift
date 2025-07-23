@@ -8,17 +8,19 @@ class MyModel: ObservableObject {
     static let shared = MyModel()
     let store = ManagedSettingsStore()
     
-    private init() {}
+    private init() {
+        // Load saved selection from AppBlockingService if available
+        if let savedSelection = AppBlockingService.shared.getSelectedApps() {
+            // Set directly to avoid triggering willSet during initialization
+            _selectionToDiscourage = Published(initialValue: savedSelection)
+        }
+    }
     
     @Published var selectionToDiscourage = FamilyActivitySelection() {
         willSet {
             print("[MyModel] New selection: \(newValue)")
-            let applications = newValue.applicationTokens
-            let categories = newValue.categoryTokens
-            let webCategories = newValue.webDomainTokens
-            store.shield.applications = applications.isEmpty ? nil : applications
-            store.shield.applicationCategories = ShieldSettings.ActivityCategoryPolicy.specific(categories, except: Set())
-            store.shield.webDomains = webCategories
+            // Save selection to AppBlockingService instead of managing shield directly
+            AppBlockingService.shared.setAppsToBlock(newValue)
         }
     }
     
@@ -36,16 +38,23 @@ class MyModel: ObservableObject {
         } catch {
             print("[MyModel] Could not start monitoring: \(error)")
         }
-        // Apply additional restrictions
-        store.dateAndTime.requireAutomaticDateAndTime = true
-        store.account.lockAccounts = true
-        store.passcode.lockPasscode = true
-        store.siri.denySiri = true
-        store.appStore.denyInAppPurchases = true
-        store.appStore.maximumRating = 200
-        store.appStore.requirePasswordForPurchases = true
-        store.media.denyExplicitContent = true
-        store.gameCenter.denyMultiplayerGaming = true
+        // REMOVED: All problematic system-wide restrictions that were hiding apps
+        // Only monitoring is needed for usage tracking
+    }
+    
+    // CRITICAL: Method to clear all problematic restrictions
+    func clearAllSystemRestrictions() {
+        print("[MyModel] Clearing all system-wide restrictions...")
+        store.dateAndTime.requireAutomaticDateAndTime = false
+        store.account.lockAccounts = false
+        store.passcode.lockPasscode = false
+        store.siri.denySiri = false
+        store.appStore.denyInAppPurchases = false
+        store.appStore.maximumRating = 1000 // Set to high value to allow all apps
+        store.appStore.requirePasswordForPurchases = false
+        store.media.denyExplicitContent = false
+        store.gameCenter.denyMultiplayerGaming = false
         store.media.denyMusicService = false
+        print("[MyModel] System restrictions cleared - apps should reappear")
     }
 } 

@@ -82,6 +82,9 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
             self.delegate?.didDetectTagWithID(tagID: tagString)
             
             if tagString == "SHIFT_TAG_001" {
+                // Toggle focus mode using the unified AppBlockingService
+                AppBlockingService.shared.toggleFocusMode()
+                
                 // Provide success haptic feedback
                 let generator = UINotificationFeedbackGenerator()
                 generator.prepare()

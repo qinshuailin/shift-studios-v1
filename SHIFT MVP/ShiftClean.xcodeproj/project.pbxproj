@@ -1,0 +1,889 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		55256AEF2D9CB74400C6D495 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031ED2D9B36DB00B330B2 /* ManagedSettings.framework */; };
+		55256AF02D9CB74400C6D495 /* ManagedSettings.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031ED2D9B36DB00B330B2 /* ManagedSettings.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		55256AF22D9CB74500C6D495 /* ManagedSettingsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031EF2D9B36DB00B330B2 /* ManagedSettingsUI.framework */; };
+		55256AF32D9CB74500C6D495 /* ManagedSettingsUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55B031EF2D9B36DB00B330B2 /* ManagedSettingsUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		55A84E652E2263C3001A3262 /* ShiftReportExtension.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 55A84E592E2263C3001A3262 /* ShiftReportExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		55AF4F822D9CB896005CC9FA /* ShiftShieldExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 55B031EB2D9B36DB00B330B2 /* ShiftShieldExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		55DBBF5C2E289FB700030DAC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55DBBF5B2E289FB700030DAC /* WidgetKit.framework */; };
+		55DBBF5E2E289FB700030DAC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55DBBF5D2E289FB700030DAC /* SwiftUI.framework */; };
+		55DBBF6F2E289FB800030DAC /* ShiftFocusLiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 55DBBF5A2E289FB700030DAC /* ShiftFocusLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		55DBBF752E28A0E600030DAC /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55DBBF742E28A0E600030DAC /* ActivityKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		55256AF42D9CB7DF00C6D495 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 55B031692D994C2900B330B2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 55B031EA2D9B36DB00B330B2;
+			remoteInfo = ShiftShieldExtension;
+		};
+		55A84E632E2263C3001A3262 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 55B031692D994C2900B330B2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 55A84E582E2263C3001A3262;
+			remoteInfo = ShiftReportExtension;
+		};
+		55DBBF6D2E289FB800030DAC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 55B031692D994C2900B330B2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 55DBBF592E289FB700030DAC;
+			remoteInfo = ShiftFocusLiveActivityExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		55256AEC2D9CB70E00C6D495 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				55DBBF6F2E289FB800030DAC /* ShiftFocusLiveActivityExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55256AF12D9CB74400C6D495 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				55256AF02D9CB74400C6D495 /* ManagedSettings.framework in Embed Frameworks */,
+				55256AF32D9CB74500C6D495 /* ManagedSettingsUI.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55A84E6A2E2263C3001A3262 /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				55A84E652E2263C3001A3262 /* ShiftReportExtension.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55AF4F812D9CB831005CC9FA /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				55AF4F822D9CB896005CC9FA /* ShiftShieldExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		55A84E592E2263C3001A3262 /* ShiftReportExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = ShiftReportExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		55B031712D994C2900B330B2 /* ShiftClean.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShiftClean.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		55B031EB2D9B36DB00B330B2 /* ShiftShieldExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShiftShieldExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		55B031ED2D9B36DB00B330B2 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
+		55B031EF2D9B36DB00B330B2 /* ManagedSettingsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettingsUI.framework; path = System/Library/Frameworks/ManagedSettingsUI.framework; sourceTree = SDKROOT; };
+		55DBBF5A2E289FB700030DAC /* ShiftFocusLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShiftFocusLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		55DBBF5B2E289FB700030DAC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		55DBBF5D2E289FB700030DAC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		55DBBF742E28A0E600030DAC /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		55A84E692E2263C3001A3262 /* Exceptions for "ShiftReportExtension" folder in "ShiftReportExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 55A84E582E2263C3001A3262 /* ShiftReportExtension */;
+		};
+		55B031832D994C2B00B330B2 /* Exceptions for "ShiftClean" folder in "ShiftClean" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 55B031702D994C2900B330B2 /* ShiftClean */;
+		};
+		55B031FD2D9B36DB00B330B2 /* Exceptions for "ShiftShieldExtension" folder in "ShiftShieldExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 55B031EA2D9B36DB00B330B2 /* ShiftShieldExtension */;
+		};
+		55DBBF732E289FB800030DAC /* Exceptions for "ShiftFocusLiveActivity" folder in "ShiftFocusLiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 55DBBF592E289FB700030DAC /* ShiftFocusLiveActivityExtension */;
+		};
+		55DBBF7F2E29C6E600030DAC /* Exceptions for "ShiftFocusLiveActivity" folder in "ShiftClean" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				FocusTimerActivity.swift,
+			);
+			target = 55B031702D994C2900B330B2 /* ShiftClean */;
+		};
+		55DBBF812E29C75000030DAC /* Exceptions for "ShiftClean" folder in "ShiftFocusLiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Core/Models/FocusTimerAttributes.swift,
+			);
+			target = 55DBBF592E289FB700030DAC /* ShiftFocusLiveActivityExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		55A84E5A2E2263C3001A3262 /* ShiftReportExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				55A84E692E2263C3001A3262 /* Exceptions for "ShiftReportExtension" folder in "ShiftReportExtension" target */,
+			);
+			path = ShiftReportExtension;
+			sourceTree = "<group>";
+		};
+		55B031732D994C2900B330B2 /* ShiftClean */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				55B031832D994C2B00B330B2 /* Exceptions for "ShiftClean" folder in "ShiftClean" target */,
+				55DBBF812E29C75000030DAC /* Exceptions for "ShiftClean" folder in "ShiftFocusLiveActivityExtension" target */,
+			);
+			path = ShiftClean;
+			sourceTree = "<group>";
+		};
+		55B031F12D9B36DB00B330B2 /* ShiftShieldExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				55B031FD2D9B36DB00B330B2 /* Exceptions for "ShiftShieldExtension" folder in "ShiftShieldExtension" target */,
+			);
+			path = ShiftShieldExtension;
+			sourceTree = "<group>";
+		};
+		55DBBF5F2E289FB700030DAC /* ShiftFocusLiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				55DBBF7F2E29C6E600030DAC /* Exceptions for "ShiftFocusLiveActivity" folder in "ShiftClean" target */,
+				55DBBF732E289FB800030DAC /* Exceptions for "ShiftFocusLiveActivity" folder in "ShiftFocusLiveActivityExtension" target */,
+			);
+			path = ShiftFocusLiveActivity;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		55A84E562E2263C3001A3262 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55B0316E2D994C2900B330B2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55B031E82D9B36DB00B330B2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55256AEF2D9CB74400C6D495 /* ManagedSettings.framework in Frameworks */,
+				55256AF22D9CB74500C6D495 /* ManagedSettingsUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55DBBF572E289FB700030DAC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55DBBF752E28A0E600030DAC /* ActivityKit.framework in Frameworks */,
+				55DBBF5E2E289FB700030DAC /* SwiftUI.framework in Frameworks */,
+				55DBBF5C2E289FB700030DAC /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		55B031682D994C2900B330B2 = {
+			isa = PBXGroup;
+			children = (
+				55B031732D994C2900B330B2 /* ShiftClean */,
+				55B031F12D9B36DB00B330B2 /* ShiftShieldExtension */,
+				55A84E5A2E2263C3001A3262 /* ShiftReportExtension */,
+				55DBBF5F2E289FB700030DAC /* ShiftFocusLiveActivity */,
+				55B031EC2D9B36DB00B330B2 /* Frameworks */,
+				55B031722D994C2900B330B2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		55B031722D994C2900B330B2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				55B031712D994C2900B330B2 /* ShiftClean.app */,
+				55B031EB2D9B36DB00B330B2 /* ShiftShieldExtension.appex */,
+				55A84E592E2263C3001A3262 /* ShiftReportExtension.appex */,
+				55DBBF5A2E289FB700030DAC /* ShiftFocusLiveActivityExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		55B031EC2D9B36DB00B330B2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				55DBBF742E28A0E600030DAC /* ActivityKit.framework */,
+				55B031ED2D9B36DB00B330B2 /* ManagedSettings.framework */,
+				55B031EF2D9B36DB00B330B2 /* ManagedSettingsUI.framework */,
+				55DBBF5B2E289FB700030DAC /* WidgetKit.framework */,
+				55DBBF5D2E289FB700030DAC /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		55A84E582E2263C3001A3262 /* ShiftReportExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55A84E662E2263C3001A3262 /* Build configuration list for PBXNativeTarget "ShiftReportExtension" */;
+			buildPhases = (
+				55A84E552E2263C3001A3262 /* Sources */,
+				55A84E562E2263C3001A3262 /* Frameworks */,
+				55A84E572E2263C3001A3262 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				55A84E5A2E2263C3001A3262 /* ShiftReportExtension */,
+			);
+			name = ShiftReportExtension;
+			packageProductDependencies = (
+			);
+			productName = ShiftReportExtension;
+			productReference = 55A84E592E2263C3001A3262 /* ShiftReportExtension.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
+		55B031702D994C2900B330B2 /* ShiftClean */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55B031842D994C2B00B330B2 /* Build configuration list for PBXNativeTarget "ShiftClean" */;
+			buildPhases = (
+				55B0316D2D994C2900B330B2 /* Sources */,
+				55B0316E2D994C2900B330B2 /* Frameworks */,
+				55B0316F2D994C2900B330B2 /* Resources */,
+				55256AEC2D9CB70E00C6D495 /* Embed Foundation Extensions */,
+				55AF4F812D9CB831005CC9FA /* Embed App Extensions */,
+				55A84E6A2E2263C3001A3262 /* Embed ExtensionKit Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				55256AF52D9CB7DF00C6D495 /* PBXTargetDependency */,
+				55A84E642E2263C3001A3262 /* PBXTargetDependency */,
+				55DBBF6E2E289FB800030DAC /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				55B031732D994C2900B330B2 /* ShiftClean */,
+			);
+			name = ShiftClean;
+			packageProductDependencies = (
+			);
+			productName = ShiftClean;
+			productReference = 55B031712D994C2900B330B2 /* ShiftClean.app */;
+			productType = "com.apple.product-type.application";
+		};
+		55B031EA2D9B36DB00B330B2 /* ShiftShieldExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55B031FC2D9B36DB00B330B2 /* Build configuration list for PBXNativeTarget "ShiftShieldExtension" */;
+			buildPhases = (
+				55B031E72D9B36DB00B330B2 /* Sources */,
+				55B031E82D9B36DB00B330B2 /* Frameworks */,
+				55B031E92D9B36DB00B330B2 /* Resources */,
+				55256AF12D9CB74400C6D495 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				55B031F12D9B36DB00B330B2 /* ShiftShieldExtension */,
+			);
+			name = ShiftShieldExtension;
+			packageProductDependencies = (
+			);
+			productName = ShiftShieldExtension;
+			productReference = 55B031EB2D9B36DB00B330B2 /* ShiftShieldExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		55DBBF592E289FB700030DAC /* ShiftFocusLiveActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55DBBF702E289FB800030DAC /* Build configuration list for PBXNativeTarget "ShiftFocusLiveActivityExtension" */;
+			buildPhases = (
+				55DBBF562E289FB700030DAC /* Sources */,
+				55DBBF572E289FB700030DAC /* Frameworks */,
+				55DBBF582E289FB700030DAC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				55DBBF5F2E289FB700030DAC /* ShiftFocusLiveActivity */,
+			);
+			name = ShiftFocusLiveActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = ShiftFocusLiveActivityExtension;
+			productReference = 55DBBF5A2E289FB700030DAC /* ShiftFocusLiveActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		55B031692D994C2900B330B2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					55A84E582E2263C3001A3262 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					55B031702D994C2900B330B2 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					55B031EA2D9B36DB00B330B2 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					55DBBF592E289FB700030DAC = {
+						CreatedOnToolsVersion = 16.2;
+					};
+				};
+			};
+			buildConfigurationList = 55B0316C2D994C2900B330B2 /* Build configuration list for PBXProject "ShiftClean" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 55B031682D994C2900B330B2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 55B031722D994C2900B330B2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				55B031702D994C2900B330B2 /* ShiftClean */,
+				55B031EA2D9B36DB00B330B2 /* ShiftShieldExtension */,
+				55A84E582E2263C3001A3262 /* ShiftReportExtension */,
+				55DBBF592E289FB700030DAC /* ShiftFocusLiveActivityExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		55A84E572E2263C3001A3262 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55B0316F2D994C2900B330B2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55B031E92D9B36DB00B330B2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55DBBF582E289FB700030DAC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		55A84E552E2263C3001A3262 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55B0316D2D994C2900B330B2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55B031E72D9B36DB00B330B2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55DBBF562E289FB700030DAC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		55256AF52D9CB7DF00C6D495 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 55B031EA2D9B36DB00B330B2 /* ShiftShieldExtension */;
+			targetProxy = 55256AF42D9CB7DF00C6D495 /* PBXContainerItemProxy */;
+		};
+		55A84E642E2263C3001A3262 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 55A84E582E2263C3001A3262 /* ShiftReportExtension */;
+			targetProxy = 55A84E632E2263C3001A3262 /* PBXContainerItemProxy */;
+		};
+		55DBBF6E2E289FB800030DAC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 55DBBF592E289FB700030DAC /* ShiftFocusLiveActivityExtension */;
+			targetProxy = 55DBBF6D2E289FB800030DAC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		55A84E672E2263C3001A3262 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShiftReportExtension/ShiftReportExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftReportExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShiftReportExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift.ShiftReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		55A84E682E2263C3001A3262 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShiftReportExtension/ShiftReportExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftReportExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShiftReportExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift.ShiftReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		55B031852D994C2B00B330B2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ShiftClean/ShiftClean.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftClean/Info.plist;
+				INFOPLIST_KEY_NFCReaderUsageDescription = "Shift needs access to NFC to detect tag taps for Focus Mode control.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		55B031862D994C2B00B330B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ShiftClean/ShiftClean.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftClean/Info.plist;
+				INFOPLIST_KEY_NFCReaderUsageDescription = "Shift needs access to NFC to detect tag taps for Focus Mode control.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		55B031872D994C2B00B330B2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		55B031882D994C2B00B330B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		55B031FA2D9B36DB00B330B2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShiftShieldExtension/ShiftShieldExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftShieldExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShiftShieldExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift.ShiftShieldExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		55B031FB2D9B36DB00B330B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShiftShieldExtension/ShiftShieldExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftShieldExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShiftShieldExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift.ShiftShieldExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		55DBBF712E289FB800030DAC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftFocusLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShiftFocusLiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift.ShiftFocusLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		55DBBF722E289FB800030DAC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 94DGSP2RHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShiftFocusLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShiftFocusLiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ericqin.shift.ShiftFocusLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		55A84E662E2263C3001A3262 /* Build configuration list for PBXNativeTarget "ShiftReportExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55A84E672E2263C3001A3262 /* Debug */,
+				55A84E682E2263C3001A3262 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		55B0316C2D994C2900B330B2 /* Build configuration list for PBXProject "ShiftClean" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55B031872D994C2B00B330B2 /* Debug */,
+				55B031882D994C2B00B330B2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		55B031842D994C2B00B330B2 /* Build configuration list for PBXNativeTarget "ShiftClean" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55B031852D994C2B00B330B2 /* Debug */,
+				55B031862D994C2B00B330B2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		55B031FC2D9B36DB00B330B2 /* Build configuration list for PBXNativeTarget "ShiftShieldExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55B031FA2D9B36DB00B330B2 /* Debug */,
+				55B031FB2D9B36DB00B330B2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		55DBBF702E289FB800030DAC /* Build configuration list for PBXNativeTarget "ShiftFocusLiveActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55DBBF712E289FB800030DAC /* Debug */,
+				55DBBF722E289FB800030DAC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 55B031692D994C2900B330B2 /* Project object */;
+}
