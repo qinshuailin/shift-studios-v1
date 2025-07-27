@@ -1,5 +1,6 @@
 import SwiftUI
 import FamilyControls
+import MessageUI
 
 class NFCDelegateHandler: NSObject, ObservableObject, NFCControllerDelegate {
     @Published var didScanTag: Bool = false
@@ -44,6 +45,7 @@ struct HomeView: View {
     @StateObject private var nfcDelegate = NFCDelegateHandler()
     @State private var clockInPressed = false
     @State private var editAppsPressed = false
+    @State private var showSettingsMenu = false
     
     var isFocusModeActive: Bool {
         AppBlockingService.shared.isFocusModeActive()
@@ -55,11 +57,26 @@ struct HomeView: View {
                 VStack(spacing: 0) {    
                     // Section 1
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("hi \(userName)")
-                            .font(.system(size: 40, weight: .light, design: .default))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 24)
+                        HStack(alignment: .top) {
+                            Text("hi \(userName)")
+                                .font(.system(size: 40, weight: .light, design: .default))
+                            Spacer()
+                            Button(action: {
+                                Constants.Haptics.primaryButtonPress()
+                                showSettingsMenu = true
+                            }) {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 35, height: 35)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.black, lineWidth: 1)
+                                    )
+                                    .offset(y: 1)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
                         
                         Text("how will you choose to spend your day?")
                             .font(.system(size: 32, weight: .light, design: .default))
@@ -152,10 +169,12 @@ struct HomeView: View {
                             Text(formattedTime(statsManager.dailyGoal))
                                 .font(.system(size: 18, weight: .light, design: .default))
                             Spacer()
-                            Button(action: { 
-                                Constants.Haptics.primaryButtonPress() // Same as Clock In/Out and Edit Apps
-                                showGoalEditor = true 
-                            }) {
+                                                Button(action: { 
+                        Constants.Haptics.primaryButtonPress() // Same as Clock In/Out and Edit Apps
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showGoalEditor = true
+                        }
+                    }) {
                                 Image(systemName: "pencil")
                                     .font(.system(size: 16, weight: .light, design: .default))
                             }
@@ -189,17 +208,27 @@ struct HomeView: View {
             // Custom fade-in modal overlay for Goal Editor
             ZStack {
                 if showGoalEditor {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture { withAnimation { showGoalEditor = false } }
-                    GoalEditorSheet(isPresented: $showGoalEditor)
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                            .onTapGesture { 
+                                withAnimation(.easeInOut(duration: 0.3)) { 
+                                    showGoalEditor = false 
+                                } 
+                            }
+                        GoalEditorSheet(isPresented: $showGoalEditor)
+                    }
+                    .opacity(showGoalEditor ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: showGoalEditor)
                 }
             }
-            .opacity(showGoalEditor ? 1 : 0)
-            .animation(.easeInOut(duration: 0.25), value: showGoalEditor)
         }
         .fullScreenCover(isPresented: $showAppPicker) {
             ActivityPickerSheet(selection: $myModel.selectionToDiscourage)
+                .preferredColorScheme(.light)
+        }
+        .fullScreenCover(isPresented: $showSettingsMenu) {
+            SettingsMenuView(isPresented: $showSettingsMenu)
                 .preferredColorScheme(.light)
         }
         .onAppear {
@@ -231,7 +260,11 @@ struct GoalEditorSheet: View {
         ZStack {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
-                .onTapGesture { withAnimation { isPresented = false } }
+                .onTapGesture { 
+                    withAnimation(.easeInOut(duration: 0.3)) { 
+                        isPresented = false 
+                    } 
+                }
             VStack(spacing: 32) {
                 Text("Set daily goal")
                     .font(.system(size: 32, weight: .light, design: .default))
@@ -246,7 +279,11 @@ struct GoalEditorSheet: View {
                             .foregroundColor(.black)
                         Stepper("", value: $hours, in: 0...23)
                             .labelsHidden()
-                        Button(action: { isPresented = false }) {
+                        Button(action: { 
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isPresented = false 
+                            }
+                        }) {
                             Text("cancel")
                                 .font(.system(size: 20, weight: .light, design: .default))
                         }
@@ -266,7 +303,9 @@ struct GoalEditorSheet: View {
                             let total = hours * 60 + minutes
                             UserDefaults.standard.set(total, forKey: "dailyGoalMinutes")
                             statsManager.dailyGoal = total
-                            isPresented = false
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isPresented = false
+                            }
                         }) {
                             Text("save")
                                 .font(.system(size: 20, weight: .light, design: .default))
@@ -283,8 +322,6 @@ struct GoalEditorSheet: View {
             .shadow(color: Color.black.opacity(0.10), radius: 24, x: 0, y: 8)
             .frame(minWidth: 320, maxWidth: 360)
         }
-        .opacity(isPresented ? 1 : 0)
-        .animation(.easeInOut(duration: 0.5), value: isPresented)
         .onAppear {
             let total = statsManager.dailyGoal
             hours = total / 60
@@ -300,6 +337,314 @@ struct FadeTextButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
+
+// MARK: - Settings Menu View
+struct SettingsMenuView: View {
+    @Binding var isPresented: Bool
+    @State private var userName: String = "sarah"
+    @State private var contactPressed = false
+    @State private var suggestPressed = false
+    @State private var privacyPressed = false
+    @State private var termsPressed = false
+    @State private var showEmailConfirmation = false
+    @State private var pendingEmailSubject = ""
+    var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+    }
+    
+    var body: some View {
+        ZStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    // Profile Section (bigger)
+                    VStack(alignment: .leading, spacing: 24) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("settings")
+                                .font(.system(size: 40, weight: .light, design: .default))
+                            Spacer()
+                            Button(action: {
+                                Constants.Haptics.primaryButtonPress()
+                                isPresented = false
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 22, weight: .light, design: .default))
+                                    .foregroundColor(.black)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                        .padding(.bottom, 16)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .background(Color.clear)
+                    
+                    Divider()
+                    
+                    // Profile Section
+                    VStack(alignment: .leading, spacing: 24) {
+                        HStack(spacing: 16) {
+                            Circle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 60, height: 60)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.black, lineWidth: 1)
+                                )
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(userName)
+                                    .font(.system(size: 24, weight: .light, design: .default))
+                                    .foregroundColor(.black)
+                                Text("tap to edit profile")
+                                    .font(.system(size: 16, weight: .light, design: .default))
+                                    .foregroundColor(.black.opacity(0.6))
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 24)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .background(Color.clear)
+                    
+                    Divider()
+                    
+                    // Contact Us button
+                    Button(action: {
+                        Constants.Haptics.primaryButtonPress()
+                        contactPressed = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            pendingEmailSubject = "Contact - Shift App Support"
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showEmailConfirmation = true
+                            }
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                contactPressed = false
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Text("Contact Us")
+                                .font(.system(size: 32, weight: .light, design: .default))
+                                .padding(.leading, 20)
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .contentShape(Rectangle())
+                        .background(contactPressed ? Color(red: 0.85, green: 0.85, blue: 0.85) : Color(red: 0.96, green: 0.94, blue: 0.91))
+                        .animation(.easeInOut(duration: 0.15), value: contactPressed)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Divider()
+                    
+                    // Suggest Features button
+                    Button(action: {
+                        Constants.Haptics.primaryButtonPress()
+                        suggestPressed = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            pendingEmailSubject = "Feature Suggestion - Shift App"
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showEmailConfirmation = true
+                            }
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                suggestPressed = false
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Text("Suggest Features")
+                                .font(.system(size: 32, weight: .light, design: .default))
+                                .padding(.leading, 20)
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .contentShape(Rectangle())
+                        .background(suggestPressed ? Color(red: 0.85, green: 0.85, blue: 0.85) : Color(red: 0.96, green: 0.94, blue: 0.91))
+                        .animation(.easeInOut(duration: 0.15), value: suggestPressed)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Divider()
+                    
+                    // Privacy Policy button
+                    Button(action: {
+                        Constants.Haptics.primaryButtonPress()
+                        privacyPressed = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            // Handle privacy policy action
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                privacyPressed = false
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Text("Privacy Policy")
+                                .font(.system(size: 32, weight: .light, design: .default))
+                                .padding(.leading, 20)
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .contentShape(Rectangle())
+                        .background(privacyPressed ? Color(red: 0.85, green: 0.85, blue: 0.85) : Color(red: 0.96, green: 0.94, blue: 0.91))
+                        .animation(.easeInOut(duration: 0.15), value: privacyPressed)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Divider()
+                    
+                    // Terms of Service button
+                    Button(action: {
+                        Constants.Haptics.primaryButtonPress()
+                        termsPressed = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            // Handle terms of service action
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                termsPressed = false
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Text("Terms of Service")
+                                .font(.system(size: 32, weight: .light, design: .default))
+                                .padding(.leading, 20)
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .contentShape(Rectangle())
+                        .background(termsPressed ? Color(red: 0.85, green: 0.85, blue: 0.85) : Color(red: 0.96, green: 0.94, blue: 0.91))
+                        .animation(.easeInOut(duration: 0.15), value: termsPressed)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Divider()
+                    
+                    // Version info at bottom
+                    VStack {
+                        Spacer()
+                        Text("Version \(appVersion)")
+                            .font(.system(size: 14, weight: .light, design: .default))
+                            .foregroundColor(.black.opacity(0.6))
+                            .padding(.bottom, 40)
+                    }
+                    .frame(minHeight: 100)
+                }
+                .padding(.top, 10)
+                .foregroundColor(.black)
+            }
+            .background(Color(red: 0.96, green: 0.94, blue: 0.91))
+            
+            // Email confirmation overlay
+            ZStack {
+                if showEmailConfirmation {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                            .onTapGesture { 
+                                withAnimation(.easeInOut(duration: 0.3)) { 
+                                    showEmailConfirmation = false 
+                                } 
+                            }
+                        EmailConfirmationSheet(
+                            isPresented: $showEmailConfirmation,
+                            subject: pendingEmailSubject,
+                            onConfirm: {
+                                openMailApp(subject: pendingEmailSubject)
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showEmailConfirmation = false
+                                }
+                            }
+                        )
+                    }
+                    .opacity(showEmailConfirmation ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: showEmailConfirmation)
+                }
+            }
+        }
+    }
+    
+    private func openMailApp(subject: String) {
+        let email = "admin@shiftstudios.space"
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "mailto:\(email)?subject=\(encodedSubject)"
+        
+        if let url = URL(string: urlString) {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            }
+        }
+    }
+}
+
+// MARK: - Email Confirmation Sheet
+struct EmailConfirmationSheet: View {
+    @Binding var isPresented: Bool
+    let subject: String
+    let onConfirm: () -> Void
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture { 
+                    withAnimation(.easeInOut(duration: 0.3)) { 
+                        isPresented = false 
+                    } 
+                }
+            VStack(spacing: 24) {
+                Text("Open Mail App?")
+                    .font(.system(size: 28, weight: .light, design: .default))
+                    .foregroundColor(.black)
+                
+                Text("This will take you outside this app to your Mail app.")
+                    .font(.system(size: 16, weight: .light, design: .default))
+                    .foregroundColor(.black.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                
+                HStack(spacing: 32) {
+                    VStack(spacing: 8) {
+                        Button(action: { 
+                            withAnimation(.easeInOut(duration: 0.3)) { 
+                                isPresented = false 
+                            }
+                        }) {
+                            Text("No")
+                                .font(.system(size: 18, weight: .light, design: .default))
+                                .foregroundColor(.black)
+                        }
+                        .buttonStyle(FadeTextButtonStyle())
+                    }
+                    
+                    VStack(spacing: 8) {
+                        Button(action: {
+                            onConfirm()
+                        }) {
+                            Text("Yes")
+                                .font(.system(size: 18, weight: .light, design: .default))
+                                .foregroundColor(.black)
+                        }
+                        .buttonStyle(FadeTextButtonStyle())
+                    }
+                }
+                .padding(.top, 6)
+            }
+            .padding(24)
+            .background(Color(red: 0.96, green: 0.94, blue: 0.91))
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.10), radius: 16, x: 0, y: 4)
+            .frame(minWidth: 260, maxWidth: 300)
+        }
+    }
+}
+
+
 
 #Preview {
     HomeView()
