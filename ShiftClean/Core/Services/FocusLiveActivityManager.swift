@@ -16,10 +16,13 @@ class FocusLiveActivityManager {
             }
             isStarting = true
             defer { isStarting = false }
+            
             // Aggressively clean up existing activities
             await cleanupExistingActivities()
+            
             let initialState = FocusTimerAttributes.ContentState(elapsedSeconds: 0, isActive: true)
             let attributes = FocusTimerAttributes(goalMinutes: goalMinutes)
+            
             do {
                 self.activity = try Activity<FocusTimerAttributes>.request(
                     attributes: attributes,
@@ -27,43 +30,39 @@ class FocusLiveActivityManager {
                     pushType: nil
                 )
                 self.lastUpdateTime = Date()
-                print("[FocusLiveActivityManager] Started new Live Activity with goal: \(goalMinutes) min")
+                print("[FocusLiveActivityManager] Started Live Activity with goal: \(goalMinutes) min")
             } catch {
                 print("[FocusLiveActivityManager] Failed to start Live Activity: \(error)")
             }
         }
     }
 
-    // Update with throttling to prevent too many updates
+    // Update with NO THROTTLING - ALWAYS UPDATE
     func update(elapsedSeconds: Int) {
-        // More aggressive throttling - update every 5 seconds minimum
-        if let lastUpdate = lastUpdateTime, Date().timeIntervalSince(lastUpdate) < 4.9 {
-            return // Skip if less than 5 seconds since last update
-        }
+        // REMOVED THROTTLING - UPDATE EVERY SINGLE TIME
+        print("[FocusLiveActivityManager] 🔥 UPDATING Live Activity: \(elapsedSeconds)s")
         
         Task { @MainActor in
             guard let activity = self.activity else {
-                print("[FocusLiveActivityManager] No activity to update")
+                print("[FocusLiveActivityManager] ⚠️ No activity to update - attempting restart...")
+                // BULLETPROOF: If no activity, try to restart it
+                await self.attemptActivityRestart(elapsedSeconds: elapsedSeconds)
                 return
             }
             
-            // Create state with explicit stale date to keep it fresh
+            // Create state with LONG stale date to prevent iOS throttling
             let state = FocusTimerAttributes.ContentState(elapsedSeconds: elapsedSeconds, isActive: true)
-            let staleDate = Date().addingTimeInterval(30) // Keep fresh for 30 seconds
+            let staleDate = Date().addingTimeInterval(300) // Keep fresh for 5 minutes
             
             do {
                 await activity.update(.init(state: state, staleDate: staleDate))
                 self.lastUpdateTime = Date()
-                
-                // Log every 30 seconds to track updates
-                if elapsedSeconds % 30 == 0 {
-                    print("[FocusLiveActivityManager] Updated Live Activity: \(elapsedSeconds)s (staleDate: \(staleDate))")
-                }
+                print("[FocusLiveActivityManager] ✅ Successfully updated to \(elapsedSeconds)s")
             } catch {
-                print("[FocusLiveActivityManager] Failed to update Live Activity: \(error)")
+                print("[FocusLiveActivityManager] ❌ Update failed: \(error)")
                 
-                // If update fails, try to refresh the activity
-                await refreshActivity(goalMinutes: activity.attributes.goalMinutes, currentSeconds: elapsedSeconds)
+                // BULLETPROOF: Multiple recovery strategies
+                await self.attemptRecovery(goalMinutes: activity.attributes.goalMinutes, currentSeconds: elapsedSeconds, error: error)
             }
         }
     }
@@ -154,4 +153,58 @@ class FocusLiveActivityManager {
             print("[FocusLiveActivityManager] Failed to refresh Live Activity: \(error)")
         }
     }
-} 
+    
+    // BULLETPROOF: Attempt to restart activity if it's missing
+    private func attemptActivityRestart(elapsedSeconds: Int) async {
+        print("[FocusLiveActivityManager] 🔄 Attempting activity restart...")
+        
+        // Try to find existing activities first
+        let existingActivities = Activity<FocusTimerAttributes>.activities
+        if let existingActivity = existingActivities.first {
+            print("[FocusLiveActivityManager] 📱 Found existing activity, using it")
+            self.activity = existingActivity
+            self.lastUpdateTime = Date()
+            return
+        }
+        
+        // If no existing activity, create new one with current progress
+        let goalMinutes = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
+        let goal = goalMinutes > 0 ? goalMinutes : 120
+        
+        let initialState = FocusTimerAttributes.ContentState(elapsedSeconds: elapsedSeconds, isActive: true)
+        let attributes = FocusTimerAttributes(goalMinutes: goal)
+        
+        do {
+            self.activity = try Activity<FocusTimerAttributes>.request(
+                attributes: attributes,
+                content: .init(state: initialState, staleDate: Date().addingTimeInterval(300)),
+                pushType: nil
+            )
+            self.lastUpdateTime = Date()
+            print("[FocusLiveActivityManager] 🎉 Restarted activity with \(elapsedSeconds)s elapsed")
+        } catch {
+            print("[FocusLiveActivityManager] 💥 Failed to restart activity: \(error)")
+        }
+    }
+    
+    // BULLETPROOF: Multiple recovery strategies when updates fail
+    private func attemptRecovery(goalMinutes: Int, currentSeconds: Int, error: Error) async {
+        print("[FocusLiveActivityManager] 🛠️ Attempting recovery from error: \(error)")
+        
+        // Strategy 1: Try update again immediately
+        if let activity = self.activity {
+            let state = FocusTimerAttributes.ContentState(elapsedSeconds: currentSeconds, isActive: true)
+            do {
+                await activity.update(.init(state: state, staleDate: Date().addingTimeInterval(300)))
+                print("[FocusLiveActivityManager] ✅ Recovery update successful")
+                self.lastUpdateTime = Date()
+                return
+            } catch {
+                print("[FocusLiveActivityManager] ❌ Recovery update failed: \(error)")
+            }
+        }
+        
+        // Strategy 2: Full refresh of the activity
+        await refreshActivity(goalMinutes: goalMinutes, currentSeconds: currentSeconds)
+    }
+}

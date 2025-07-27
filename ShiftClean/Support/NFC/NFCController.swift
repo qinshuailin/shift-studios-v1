@@ -18,13 +18,9 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
     func beginScanning() {
         guard NFCNDEFReaderSession.readingAvailable else {
             print("NFC not supported on this device")
+            // Provide error feedback for unsupported device
+            Constants.Haptics.error()
             return
-        }
-        
-        // Force dark mode at the system level before starting NFC session
-        if #available(iOS 13.0, *) {
-            // Use UIWindow.appearance() instead of trying to access windows directly
-            UIWindow.appearance().overrideUserInterfaceStyle = .dark
         }
         
         nfcSession = NFCNDEFReaderSession(delegate: self, queue: nil, invalidateAfterFirstRead: true)
@@ -32,28 +28,47 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
         nfcSession?.begin()
         
         // Provide haptic feedback when scanning begins
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.prepare()
-        generator.impactOccurred()
+        Constants.Haptics.nfcScanStart()
+        print("NFC scanning started with haptic feedback")
     }
     
     func readerSessionDidBecomeActive(_ session: NFCNDEFReaderSession) {
         print("NFC session is active")
         
-        // Provide haptic feedback when session becomes active
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        generator.impactOccurred()
+        // Provide light haptic feedback when session becomes active
+        Constants.Haptics.light()
     }
     
     func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
-        print("NFC scan failed: \(error.localizedDescription)")
+        print("NFC scan ended: \(error.localizedDescription)")
         
-        // Provide error haptic feedback if not user canceled
-        if !error.localizedDescription.contains("canceled") {
-            let generator = UINotificationFeedbackGenerator()
-            generator.prepare()
-            generator.notificationOccurred(.error)
+        // INSTANT haptic feedback - zero delay, maximum responsiveness
+        if let nfcError = error as? NFCReaderError {
+            switch nfcError.code {
+            case .readerSessionInvalidationErrorUserCanceled:
+                // User tapped "X" - INSTANT ultra-light pulse
+                Constants.Haptics.nfcScanCanceled()
+                print("NFC scan canceled by user")
+                
+            case .readerSessionInvalidationErrorSessionTimeout:
+                // Session timed out - immediate warning
+                Constants.Haptics.gentleWarning()
+                print("NFC scan timed out")
+                
+            default:
+                // Other errors - immediate error feedback
+                Constants.Haptics.nfcScanError()
+                print("NFC scan error: \(nfcError.localizedDescription)")
+            }
+        } else {
+            // Fallback - immediate response
+            if error.localizedDescription.contains("canceled") || error.localizedDescription.contains("cancelled") {
+                Constants.Haptics.nfcScanCanceled()
+                print("NFC scan canceled")
+            } else {
+                Constants.Haptics.nfcScanError()
+                print("NFC scan failed: \(error.localizedDescription)")
+            }
         }
     }
     
@@ -83,19 +98,14 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
             
             if tagString == "SHIFT_TAG_001" {
                 // Provide success haptic feedback
-                let generator = UINotificationFeedbackGenerator()
-                generator.prepare()
-                generator.notificationOccurred(.success)
-                
-                // Also provide a medium impact for physical sensation
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                Constants.Haptics.nfcScanSuccess()
                 
                 // Notify delegate that focus mode was toggled
                 self.delegate?.didToggleFocusMode()
                 print("Recognized tag — focus mode toggled")
             } else {
                 // Provide error haptic feedback for unrecognized tag
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                Constants.Haptics.nfcScanError()
                 print("Unrecognized tag content")
             }
         }

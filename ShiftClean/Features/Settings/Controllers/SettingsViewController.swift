@@ -67,6 +67,7 @@ class SettingsViewController: UIViewController {
     }
     
     @objc private func selectAppsButtonTapped() {
+        Constants.Haptics.primaryButtonPress()
         let picker = FamilyActivityPicker(selection: Binding(
             get: { self.service.selection },
             set: { self.service.selection = $0 }
@@ -76,6 +77,7 @@ class SettingsViewController: UIViewController {
     }
     
     @objc private func backButtonTapped() {
+        Constants.Haptics.buttonPress()
         dismiss(animated: true)
     }
 }

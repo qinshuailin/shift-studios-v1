@@ -32,7 +32,8 @@ class RealTimeUsageTracker: ObservableObject {
 
     private func incrementUsage() {
         guard let app = currentApp else { return }
-        usageData[app, default: 0] += 1
+        // Store in seconds (as TimeInterval expects), increment by 1 second
+        usageData[app, default: 0] += 1.0  // 1.0 second as TimeInterval
         writeUsageDataToAppGroup()
     }
 

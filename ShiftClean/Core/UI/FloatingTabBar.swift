@@ -124,6 +124,7 @@ class FloatingTabBar: UIView {
     }
     
     @objc private func tabButtonTapped(_ sender: UIButton) {
+        Constants.Haptics.tabSelection()
         updateSelection(index: sender.tag, animated: true)
         tabSelectionCallback?(sender.tag)
     }

@@ -92,6 +92,7 @@ struct HomeView: View {
                     Divider()
                     // Clock In/Out button
                     Button(action: {
+                        Constants.Haptics.primaryButtonPress()
                         clockInPressed = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                             NFCController.shared.delegate = nfcDelegate
@@ -117,6 +118,7 @@ struct HomeView: View {
                     Divider()
                     // Edit Apps button
                     Button(action: {
+                        Constants.Haptics.primaryButtonPress() // Same as Clock In/Out
                         editAppsPressed = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                             showAppPicker = true
@@ -150,7 +152,10 @@ struct HomeView: View {
                             Text(formattedTime(statsManager.dailyGoal))
                                 .font(.system(size: 18, weight: .light, design: .default))
                             Spacer()
-                            Button(action: { showGoalEditor = true }) {
+                            Button(action: { 
+                                Constants.Haptics.primaryButtonPress() // Same as Clock In/Out and Edit Apps
+                                showGoalEditor = true 
+                            }) {
                                 Image(systemName: "pencil")
                                     .font(.system(size: 16, weight: .light, design: .default))
                             }

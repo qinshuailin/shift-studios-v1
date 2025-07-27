@@ -66,6 +66,21 @@ class StatsManager: ObservableObject {
     init() {
         print("[StatsManager] === STATSMANAGER INIT DEBUG ===")
         
+        // BULLETPROOF: Add background/foreground observers
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+        
         // Load focus mode state from UserDefaults
         let savedFocusState = userDefaults.bool(forKey: focusModeActiveKey)
         print("[StatsManager] Saved focus state from UserDefaults: \(savedFocusState)")
@@ -136,6 +151,7 @@ class StatsManager: ObservableObject {
         // Load real data from App Group
         loadAppGroupUsageData()
         totalFocusTime = getDailyFocusMinutes()
+        print("[StatsManager] 🐛 DEBUG: Loaded totalFocusTime = \(totalFocusTime) minutes from getDailyFocusMinutes()")
         updateTotalTimeSavedToday() // NEW: Calculate total time saved today
         currentStreak = getCurrentStreak()
         weeklyData = getWeeklyFocusMinutes()
@@ -183,15 +199,23 @@ class StatsManager: ObservableObject {
     // Make this public so it can be called from outside
     func updateTotalTimeSavedToday() {
         var total = totalFocusTime // Completed sessions today
+        print("[StatsManager] 🐛 DEBUG: totalFocusTime = \(totalFocusTime) minutes")
+        
         // Add current session time if focus mode is active
         if isFocusModeActive, let start = focusModeStartTime {
-            let currentSessionMinutes = Int(Date().timeIntervalSince(start) / 60)
+            let sessionSeconds = Date().timeIntervalSince(start)
+            let currentSessionMinutes = Int(sessionSeconds / 60)
+            print("[StatsManager] 🐛 DEBUG: sessionSeconds = \(sessionSeconds), currentSessionMinutes = \(currentSessionMinutes)")
+            
             // Remove any cap or limit here
             total += currentSessionMinutes
             print("[StatsManager] Live update: completed=\(totalFocusTime)min, current=\(currentSessionMinutes)min, total=\(total)min")
         } else {
             print("[StatsManager] Live update: completed=\(totalFocusTime)min, no active session, total=\(total)min")
         }
+        
+        print("[StatsManager] 🐛 DEBUG: Final total = \(total) minutes")
+        
         // Only update if the value has actually changed to avoid unnecessary UI updates
         if totalTimeSavedToday != total {
             print("[StatsManager] ✅ Updating totalTimeSavedToday from \(totalTimeSavedToday) to \(total)")
@@ -232,50 +256,67 @@ class StatsManager: ObservableObject {
     }
     
     func startFocusSession() {
-        // Prevent starting if already active
+        print("[StatsManager] === START FOCUS SESSION DEBUG ===")
+        print("[StatsManager] Current state: isFocusModeActive=\(isFocusModeActive)")
+        print("[StatsManager] Current focusModeStartTime: \(focusModeStartTime?.description ?? "nil")")
+        
+        // Force reset if in invalid state
+        if isFocusModeActive && focusModeStartTime == nil {
+            print("[StatsManager] ⚠️ INVALID STATE DETECTED - Resetting focus mode state")
+            forceResetFocusState()
+        }
+        
         guard !isFocusModeActive else {
-            print("[StatsManager] Focus session already active, ignoring duplicate start")
+            print("[StatsManager] ⚠️ Focus session already active, ignoring start request")
             return
         }
         
-        print("[StatsManager] Starting focus session...")
-        
-        let session = FocusSession(startTime: Date())
-        saveFocusSession(session)
-        userDefaults.set(true, forKey: focusModeActiveKey)
-        userDefaults.set(session.startTime, forKey: "focusModeStartTime")
+        let now = Date()
+        focusModeStartTime = now
         isFocusModeActive = true
-        focusModeStartTime = session.startTime
-        // Immediately update the total time saved display
-        updateTotalTimeSavedToday()
         
-        // Start usage tracking for the main app
-        RealTimeUsageTracker.shared.startTracking(appName: "Shift")
-        print("[StatsManager] Started real-time usage tracking")
+        // CRITICAL: Create and save a FocusSession object
+        let newSession = FocusSession(startTime: now)
+        saveFocusSession(newSession)
+        print("[StatsManager] ✅ Created and saved FocusSession: \(newSession.id)")
         
-        // Start Live Activity
+        // Persist state
+        userDefaults.set(true, forKey: focusModeActiveKey)
+        userDefaults.set(now, forKey: "focusModeStartTime")
+        
+        print("[StatsManager] ✅ Focus session started at: \(now)")
+        
+        // Start Live Activity with enhanced haptic feedback
         let goalMinutes = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
-        print("[StatsManager] Starting Live Activity with goal: \(goalMinutes > 0 ? goalMinutes : 60) minutes")
-        FocusLiveActivityManager.shared.start(goalMinutes: goalMinutes > 0 ? goalMinutes : 60)
+        let goal = goalMinutes > 0 ? goalMinutes : 120
+        FocusLiveActivityManager.shared.start(goalMinutes: goal)
+        Constants.Haptics.liveActivityStart()
+        print("[StatsManager] Started Live Activity with goal: \(goal) minutes")
         
-        // Start the live activity timer
+        // Start live activity timer
         startLiveActivityTimer()
         
-        print("[StatsManager] Focus session started successfully")
+        // Start live update timer for real-time stats display
+        startLiveUpdateTimer()
+        
+        print("[StatsManager] === START FOCUS SESSION DEBUG COMPLETE ===")
+        
+        NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeEnabled), object: nil)
     }
     
     func endFocusSession() {
         print("[StatsManager] === END FOCUS SESSION DEBUG ===")
         print("[StatsManager] Current isFocusModeActive: \(isFocusModeActive)")
         
-        guard var sessions = getFocusSessions(), !sessions.isEmpty else { 
-            print("[StatsManager] No sessions found to end")
-            return 
-        }
         guard isFocusModeActive else { 
             print("[StatsManager] Focus mode not active, nothing to end")
             return 
         } // Prevent duplicate endings
+        
+        guard var sessions = getFocusSessions(), !sessions.isEmpty else { 
+            print("[StatsManager] No sessions found to end")
+            return 
+        }
         
         // Stop usage tracking
         RealTimeUsageTracker.shared.stopTracking()
@@ -284,6 +325,7 @@ class StatsManager: ObservableObject {
         // Update the last session with end time
         var lastSession = sessions.removeLast()
         lastSession.endTime = Date()
+        
         // Calculate duration in minutes
         let durationMinutes: Int
         if let duration = lastSession.durationInMinutes {
@@ -291,10 +333,18 @@ class StatsManager: ObservableObject {
         } else {
             durationMinutes = 0
         }
-        // FIXED: Only add to completed session time, don't double count
+        
+        print("[StatsManager] 🐛 DEBUG: Session duration = \(durationMinutes) minutes")
+        print("[StatsManager] 🐛 DEBUG: Current totalFocusTime before = \(totalFocusTime) minutes")
+        
+        // CRITICAL FIX: Only persist to UserDefaults, don't add to totalFocusTime again
+        // The session time was already included in totalTimeSavedToday during the active session
         if durationMinutes > 0 {
-            totalFocusTime += durationMinutes
-            print("[StatsManager] Adding \(durationMinutes) minutes to total, new total: \(totalFocusTime)")
+            let today = Calendar.current.startOfDay(for: Date())
+            let key = "\(dailyMinutesKey)_\(today.timeIntervalSince1970)"
+            let currentMinutes = userDefaults.integer(forKey: key)
+            userDefaults.set(currentMinutes + durationMinutes, forKey: key)
+            print("[StatsManager] ✅ Persisted \(durationMinutes) minutes to UserDefaults. Total now: \(currentMinutes + durationMinutes)")
         }
         
         sessions.append(lastSession)
@@ -312,11 +362,16 @@ class StatsManager: ObservableObject {
         
         // End Live Activity
         let elapsedSeconds = lastSession.endTime?.timeIntervalSince(lastSession.startTime) ?? 0
-        FocusLiveActivityManager.shared.end(finalElapsedSeconds: Int(elapsedSeconds))
-        print("[StatsManager] Ended Live Activity with \(Int(elapsedSeconds)) seconds")
+        let finalElapsedSeconds = Int(elapsedSeconds)
+        FocusLiveActivityManager.shared.end(finalElapsedSeconds: finalElapsedSeconds)
+        Constants.Haptics.liveActivityComplete()
+        print("[StatsManager] Ended Live Activity with \(finalElapsedSeconds) seconds")
         
-        // Immediately update the total time saved display
+        // CRITICAL: Reload totalFocusTime from UserDefaults and update display
+        totalFocusTime = getDailyFocusMinutes()
+        print("[StatsManager] 🐛 DEBUG: Reloaded totalFocusTime after session end = \(totalFocusTime) minutes")
         updateTotalTimeSavedToday()
+        
         print("[StatsManager] === END FOCUS SESSION DEBUG COMPLETE ===")
         
         NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeDisabled), object: nil)
@@ -547,9 +602,17 @@ class StatsManager: ObservableObject {
             liveActivityTimer = nil
             return
         }
+        
         let elapsed = Int(Date().timeIntervalSince(start))
-        print("[StatsManager] Updating Live Activity with elapsed time: \(elapsed)s")
+        
+        // Milestone haptic feedback every 5 minutes (300 seconds)
+        if elapsed > 0 && elapsed % 300 == 0 {
+            Constants.Haptics.liveActivityMilestone()
+            print("[StatsManager] 🎉 5-minute milestone reached: \(elapsed/60) minutes")
+        }
+        
         FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+        lastTimerHeartbeat = Date() // Update heartbeat
     }
     
     // Call this on app launch/foreground to sync Live Activity with actual elapsed time
@@ -560,30 +623,129 @@ class StatsManager: ObservableObject {
         }
     }
     
-    // MARK: - Live Activity Timer Management
-    private func startLiveActivityTimer() {
-        print("[StatsManager] Starting Live Activity timer...")
+    // MARK: - Live Activity Timer Management - BULLETPROOF PUBLIC ACCESS
+    func startLiveActivityTimer() {
+        print("[StatsManager] 🔥 STARTING BULLETPROOF LIVE ACTIVITY TIMER 🔥")
         // Stop any existing timer
         liveActivityTimer?.invalidate()
         
-        // Start timer to update Live Activity every 5 SECONDS (more iOS-friendly)
-        liveActivityTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            self?.updateLiveActivityTimer()
+        // Start timer to update Live Activity every 1 SECOND for real-time updates
+        liveActivityTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                print("[StatsManager] ⚠️ Self deallocated, invalidating timer")
+                timer.invalidate()
+                return
+            }
+            
+            // BULLETPROOF: Double-check timer is still valid
+            if !timer.isValid {
+                print("[StatsManager] ⚠️ Timer became invalid, restarting...")
+                self.startLiveActivityTimer()
+                return
+            }
+            
+            self.updateLiveActivityTimer()
         }
         
-        // CRITICAL: Add to main run loop to keep running in background
+        // CRITICAL: Add to main run loop with ALL modes to survive everything
         if let timer = liveActivityTimer {
+            RunLoop.main.add(timer, forMode: .common)
+            RunLoop.main.add(timer, forMode: .default)
+            RunLoop.main.add(timer, forMode: .tracking)
+        }
+        
+        print("[StatsManager] ✅ BULLETPROOF Live Activity timer started (1-second intervals)")
+        
+        // ADDITIONAL SAFETY: Schedule a backup timer to restart this timer if it dies
+        scheduleTimerWatchdog()
+        
+        NotificationCenter.default.post(name: NSNotification.Name("LiveActivityTimerStarted"), object: nil)
+    }
+    
+    // BULLETPROOF: Watchdog timer to restart the main timer if it dies
+    private var watchdogTimer: Timer?
+    private var lastTimerHeartbeat: Date = Date()
+    
+    private func scheduleTimerWatchdog() {
+        watchdogTimer?.invalidate()
+        watchdogTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Check if main timer is still alive by checking heartbeat
+            let timeSinceLastHeartbeat = Date().timeIntervalSince(self.lastTimerHeartbeat)
+            if timeSinceLastHeartbeat > 3 { // If no heartbeat for 3 seconds
+                print("[StatsManager] 🚨 TIMER DIED! Restarting Live Activity timer...")
+                self.startLiveActivityTimer()
+            }
+        }
+        
+        if let watchdog = watchdogTimer {
+            RunLoop.main.add(watchdog, forMode: .common)
+        }
+    }
+    
+    private func startLiveUpdateTimer() {
+        print("[StatsManager] Starting live update timer...")
+        // Stop any existing timer
+        liveUpdateTimer?.invalidate()
+        
+        // Start timer to update UI every 60 seconds for live stats display
+        liveUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            self?.updateTotalTimeSavedToday()
+        }
+        
+        // Add to main run loop to keep running in background
+        if let timer = liveUpdateTimer {
             RunLoop.main.add(timer, forMode: .common)
         }
         
-        print("[StatsManager] Live Activity timer started (5-second intervals)")
-        NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeEnabled), object: nil)
+        print("[StatsManager] Live update timer started (60-second intervals)")
     }
     
     deinit {
         liveUpdateTimer?.invalidate()
         refreshTimer?.invalidate()
         liveActivityTimer?.invalidate()
+        watchdogTimer?.invalidate()
+        
+        // Remove observers
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    // BULLETPROOF: Restart timers when app goes to background
+    @objc private func appDidEnterBackground() {
+        print("[StatsManager] 📱 App entering background - preparing timers for background survival")
+        
+        if isFocusModeActive {
+            // Update Live Activity immediately before going to background
+            if let start = focusModeStartTime {
+                let elapsed = Int(Date().timeIntervalSince(start))
+                FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+                print("[StatsManager] 📱 Updated Live Activity to \(elapsed)s before background")
+            }
+        }
+    }
+    
+    // BULLETPROOF: Aggressively restart everything when app comes to foreground
+    @objc private func appWillEnterForeground() {
+        print("[StatsManager] 🌟 App entering foreground - RESTARTING ALL TIMERS")
+        
+        if isFocusModeActive {
+            print("[StatsManager] 🔥 Focus mode active - BULLETPROOF RESTART")
+            
+            // Immediately restart Live Activity timer
+            startLiveActivityTimer()
+            
+            // Sync Live Activity with current time
+            if let start = focusModeStartTime {
+                let elapsed = Int(Date().timeIntervalSince(start))
+                FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+                print("[StatsManager] 🔄 Synced Live Activity to \(elapsed)s after foreground")
+            }
+            
+            // Update total time saved
+            updateTotalTimeSavedToday()
+        }
     }
 }
 

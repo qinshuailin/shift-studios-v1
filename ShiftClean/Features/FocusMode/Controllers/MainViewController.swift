@@ -118,9 +118,19 @@ class MainViewController: UIViewController {
     }
 
     @objc private func appWillEnterForeground() {
+        print("[MainViewController] 🌟 App entering foreground - BULLETPROOF RESTART")
+        
         // Refresh everything when returning to foreground
         StatsManager.shared.updateTotalTimeSavedToday()
         StatsManager.shared.syncLiveActivityIfNeeded()
+        
+        // BULLETPROOF: If focus mode is active, aggressively restart timers
+        if StatsManager.shared.isFocusModeActive {
+            print("[MainViewController] 🔥 Focus mode active - forcing timer restart")
+            // Force restart the Live Activity timer
+            StatsManager.shared.startLiveActivityTimer()
+        }
+        
         // If you need to update SwiftUI, use ObservableObject
     }
     

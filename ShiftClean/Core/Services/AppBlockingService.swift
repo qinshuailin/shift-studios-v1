@@ -54,6 +54,8 @@ class AppBlockingService: ObservableObject {
         if !isFocusModeActive() {
             enableFocusMode()
             StatsManager.shared.startFocusSession()
+            // Provide haptic feedback for focus activation
+            Constants.Haptics.focusActivated()
             // Fixed post method call
             NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeToggled), object: nil)
         }
@@ -64,6 +66,8 @@ class AppBlockingService: ObservableObject {
         if isFocusModeActive() {
             disableFocusMode()
             StatsManager.shared.endFocusSession()
+            // Provide haptic feedback for focus deactivation
+            Constants.Haptics.focusDeactivated()
             // Fixed post method call
             NotificationCenter.default.post(name: NSNotification.Name(Constants.Notifications.focusModeToggled), object: nil)
         }

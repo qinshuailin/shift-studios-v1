@@ -194,20 +194,24 @@ class GoalEditorViewController: UIViewController {
     @objc private func hoursChanged() {
         currentHours = Int(hoursStepper.value)
         updateLabels()
+        Constants.Haptics.stepperChange()
     }
     
     @objc private func minutesChanged() {
         currentMinutes = Int(minutesStepper.value)
         updateLabels()
+        Constants.Haptics.stepperChange()
     }
     
     @objc private func saveTapped() {
         let totalMinutes = (currentHours * 60) + currentMinutes
         delegate?.goalEditor(self, didSetGoal: totalMinutes)
+        Constants.Haptics.goalSet()
         dismiss(animated: true)
     }
     
     @objc private func cancelTapped() {
+        Constants.Haptics.buttonPress()
         dismiss(animated: true)
     }
     

@@ -119,3 +119,74 @@ extension UIView {
         })
     }
 }
+
+// MARK: - SwiftUI Haptic Extensions
+import SwiftUI
+
+extension View {
+    /// Adds haptic feedback to any SwiftUI view interaction
+    func hapticFeedback(_ type: Constants.HapticType = .light) -> some View {
+        self.onTapGesture {
+            switch type {
+            case .ultraLight:
+                Constants.Haptics.ultraLight()
+            case .light:
+                Constants.Haptics.light()
+            case .medium:
+                Constants.Haptics.medium()
+            case .heavy:
+                Constants.Haptics.heavy()
+            case .success:
+                Constants.Haptics.success()
+            case .warning:
+                Constants.Haptics.warning()
+            case .error:
+                Constants.Haptics.error()
+            case .selection:
+                Constants.Haptics.selection()
+            case .buttonPress:
+                Constants.Haptics.buttonPress()
+            case .primaryButtonPress:
+                Constants.Haptics.primaryButtonPress()
+            case .tabSelection:
+                Constants.Haptics.tabSelection()
+            case .stepperChange:
+                Constants.Haptics.stepperChange()
+            case .toggleSwitch:
+                Constants.Haptics.toggleSwitch()
+            case .focusActivated:
+                Constants.Haptics.focusActivated()
+            case .focusDeactivated:
+                Constants.Haptics.focusDeactivated()
+            case .goalSet:
+                Constants.Haptics.goalSet()
+            case .appSelected:
+                Constants.Haptics.appSelected()
+            case .nfcScanStart:
+                Constants.Haptics.nfcScanStart()
+            case .nfcScanSuccess:
+                Constants.Haptics.nfcScanSuccess()
+            case .nfcScanError:
+                Constants.Haptics.nfcScanError()
+            case .nfcScanCanceled:
+                Constants.Haptics.nfcScanCanceled()
+            case .liveActivityStart:
+                Constants.Haptics.liveActivityStart()
+            case .liveActivityMilestone:
+                Constants.Haptics.liveActivityMilestone()
+            case .liveActivityComplete:
+                Constants.Haptics.liveActivityComplete()
+            case .progressStart:
+                Constants.Haptics.progressStart()
+            case .progressStep:
+                Constants.Haptics.progressStep()
+            case .progressComplete:
+                Constants.Haptics.progressComplete()
+            case .gentleWarning:
+                Constants.Haptics.gentleWarning()
+            case .destructiveConfirmation:
+                Constants.Haptics.destructiveConfirmation()
+            }
+        }
+    }
+}

@@ -13,6 +13,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
+        // Initialize haptic system for instant response
+        Constants.Haptics.initialize()
+        print("[AppDelegate] Haptic system initialized")
+        
         // Request FamilyControls authorization using .individual (Apple methodology)
         Task {
             do {
@@ -117,5 +121,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 application.endBackgroundTask(taskId)
             }
         }
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // Warm up haptic generators when app becomes active for instant response
+        Constants.Haptics.initialize()
     }
 }
