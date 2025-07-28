@@ -2,6 +2,26 @@ import SwiftUI
 import FamilyControls
 import MessageUI
 
+// MARK: - Global User Manager
+class UserManager: ObservableObject {
+    static let shared = UserManager()
+    
+    @Published var userName: String {
+        didSet {
+            UserDefaults.standard.set(userName, forKey: "globalUserName")
+            NotificationCenter.default.post(name: NSNotification.Name("UserNameChanged"), object: userName)
+        }
+    }
+    
+    private init() {
+        self.userName = UserDefaults.standard.string(forKey: "globalUserName") ?? "sarah"
+    }
+    
+    func updateName(_ newName: String) {
+        userName = newName
+    }
+}
+
 class NFCDelegateHandler: NSObject, ObservableObject, NFCControllerDelegate {
     @Published var didScanTag: Bool = false
     func didScanNFCTag() {
@@ -39,7 +59,7 @@ struct HomeView: View {
     @ObservedObject var statsManager = StatsManager.shared
     @State private var showGoalEditor = false
     @State private var showAppPicker = false
-    @State private var userName: String = "sarah" // Replace with dynamic fetch if available
+    @ObservedObject private var userManager = UserManager.shared
     @ObservedObject var myModel = MyModel.shared
     @State private var familyActivitySelection = FamilyActivitySelection()
     @StateObject private var nfcDelegate = NFCDelegateHandler()
@@ -58,8 +78,8 @@ struct HomeView: View {
                     // Section 1
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(alignment: .top) {
-                            Text("hi \(userName)")
-                                .font(.system(size: 40, weight: .light, design: .default))
+                                                    Text("hi \(userManager.userName)")
+                            .font(.system(size: 40, weight: .light, design: .default))
                             Spacer()
                             Button(action: {
                                 Constants.Haptics.primaryButtonPress()
@@ -341,13 +361,16 @@ struct FadeTextButtonStyle: ButtonStyle {
 // MARK: - Settings Menu View
 struct SettingsMenuView: View {
     @Binding var isPresented: Bool
-    @State private var userName: String = "sarah"
+    @ObservedObject private var userManager = UserManager.shared
     @State private var contactPressed = false
     @State private var suggestPressed = false
     @State private var privacyPressed = false
     @State private var termsPressed = false
     @State private var showEmailConfirmation = false
     @State private var pendingEmailSubject = ""
+    @State private var showProfileEditor = false
+
+    
     var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
     }
@@ -382,29 +405,36 @@ struct SettingsMenuView: View {
                     
                     // Profile Section
                     VStack(alignment: .leading, spacing: 24) {
-                        HStack(spacing: 16) {
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 60, height: 60)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(userName)
-                                    .font(.system(size: 24, weight: .light, design: .default))
-                                    .foregroundColor(.black)
-                                Text("tap to edit profile")
-                                    .font(.system(size: 16, weight: .light, design: .default))
-                                    .foregroundColor(.black.opacity(0.6))
+                        Button(action: {
+                            Constants.Haptics.primaryButtonPress()
+                            showNativeProfileEditor()
+                        }) {
+                            HStack(alignment: .center, spacing: 20) {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 80, height: 80)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.black, lineWidth: 1)
+                                    )
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(userManager.userName)
+                                        .font(.system(size: 32, weight: .light, design: .default))
+                                        .foregroundColor(.black)
+                                    Text("tap to edit profile")
+                                        .font(.system(size: 18, weight: .light, design: .default))
+                                        .foregroundColor(.black.opacity(0.6))
+                                }
+                                
+                                Spacer()
                             }
-                            
-                            Spacer()
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(PlainButtonStyle())
                         .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                        .padding(.bottom, 24)
+                        .padding(.top, 24)
+                        .padding(.bottom, 32)
                     }
                     .frame(maxWidth: .infinity)
                     .background(Color.clear)
@@ -566,6 +596,24 @@ struct SettingsMenuView: View {
                     .animation(.easeInOut(duration: 0.3), value: showEmailConfirmation)
                 }
             }
+            
+            // Profile editor overlay
+            ZStack {
+                if showProfileEditor {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                            .onTapGesture { 
+                                withAnimation(.easeInOut(duration: 0.3)) { 
+                                    showProfileEditor = false 
+                                } 
+                            }
+                        // Native profile editor is used instead
+                    }
+                    .opacity(showProfileEditor ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: showProfileEditor)
+                }
+            }
         }
     }
     
@@ -578,6 +626,29 @@ struct SettingsMenuView: View {
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             }
+        }
+    }
+    
+    private func showNativeProfileEditor() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else { return }
+        
+        let profileEditor = NativeProfileEditorViewController(
+            currentName: userManager.userName,
+            onSave: { newName in
+                DispatchQueue.main.async {
+                    UserManager.shared.updateName(newName)
+                }
+            }
+        )
+        
+        let navController = UINavigationController(rootViewController: profileEditor)
+        navController.modalPresentationStyle = .pageSheet
+        
+        if let presentedVC = window.rootViewController?.presentedViewController {
+            presentedVC.present(navController, animated: true)
+        } else {
+            window.rootViewController?.present(navController, animated: true)
         }
     }
 }
@@ -645,6 +716,325 @@ struct EmailConfirmationSheet: View {
 }
 
 
+
+
+
+
+
+// MARK: - Native UIKit Profile Editor (Optimized for Zero Lag)
+class NativeProfileEditorViewController: UIViewController {
+    private let currentName: String
+    private let onSave: (String) -> Void
+    private var nameTextField: UITextField!
+    
+    // Pre-warm keyboard system
+    private static var isKeyboardPreWarmed = false
+    
+    init(currentName: String, onSave: @escaping (String) -> Void) {
+        self.currentName = currentName
+        self.onSave = onSave
+        super.init(nibName: nil, bundle: nil)
+        
+        // Pre-warm keyboard on first use
+        Self.preWarmKeyboard()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    // MARK: - Keyboard Pre-warming
+    private static func preWarmKeyboard() {
+        guard !isKeyboardPreWarmed else { return }
+        isKeyboardPreWarmed = true
+        
+        DispatchQueue.main.async {
+            // Create a temporary text field to initialize the keyboard system
+            let tempTextField = UITextField()
+            tempTextField.autocorrectionType = .no
+            tempTextField.autocapitalizationType = .words
+            tempTextField.keyboardType = .default
+            
+            // Add to a temporary window
+            let tempWindow = UIWindow(frame: .zero)
+            tempWindow.addSubview(tempTextField)
+            tempTextField.becomeFirstResponder()
+            
+            // Clean up immediately
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                tempTextField.resignFirstResponder()
+                tempTextField.removeFromSuperview()
+                tempWindow.isHidden = true
+            }
+        }
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+        setupKeyboardNotifications()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Pre-focus just before appearing for instant response
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { [weak self] in
+            self?.nameTextField.becomeFirstResponder()
+        }
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    // MARK: - Keyboard Management
+    private func setupKeyboardNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func keyboardWillShow(notification: NSNotification) {
+        guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue else { return }
+        let keyboardHeight = keyboardFrame.cgRectValue.height
+        
+        // Adjust content inset for keyboard
+        if let scrollView = view.subviews.first(where: { $0 is UIScrollView }) as? UIScrollView {
+            scrollView.contentInset.bottom = keyboardHeight
+            scrollView.scrollIndicatorInsets.bottom = keyboardHeight
+        }
+    }
+    
+    @objc private func keyboardWillHide(notification: NSNotification) {
+        if let scrollView = view.subviews.first(where: { $0 is UIScrollView }) as? UIScrollView {
+            scrollView.contentInset.bottom = 0
+            scrollView.scrollIndicatorInsets.bottom = 0
+        }
+    }
+
+    private func setupUI() {
+        view.backgroundColor = UIColor(red: 0.96, green: 0.94, blue: 0.91, alpha: 1.0)
+        
+        // Hide default navigation bar
+        navigationController?.setNavigationBarHidden(true, animated: false)
+        
+        // Create custom header section
+        let headerView = UIView()
+        headerView.backgroundColor = UIColor(red: 0.96, green: 0.94, blue: 0.91, alpha: 1.0)
+        headerView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(headerView)
+        
+        // Cancel button
+        let cancelButton = UIButton(type: .system)
+        cancelButton.setTitle("cancel", for: .normal)
+        cancelButton.titleLabel?.font = UIFont.systemFont(ofSize: 22, weight: .light)
+        cancelButton.setTitleColor(UIColor.black, for: .normal)
+        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
+        cancelButton.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(cancelButton)
+        
+        // Save button
+        let saveButton = UIButton(type: .system)
+        saveButton.setTitle("save", for: .normal)
+        saveButton.titleLabel?.font = UIFont.systemFont(ofSize: 22, weight: .light)
+        saveButton.setTitleColor(UIColor.black, for: .normal)
+        saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+        saveButton.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(saveButton)
+        
+        // Center title
+        let titleLabel = UILabel()
+        titleLabel.text = "edit profile"
+        titleLabel.font = UIFont.systemFont(ofSize: 22, weight: .light)
+        titleLabel.textColor = UIColor.black
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(titleLabel)
+        
+        // Header divider
+        let headerDivider = UIView()
+        headerDivider.backgroundColor = UIColor.black.withAlphaComponent(0.2)
+        headerDivider.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(headerDivider)
+        
+
+        
+        // Create scroll view like other pages
+        let scrollView = UIScrollView()
+        scrollView.backgroundColor = UIColor(red: 0.96, green: 0.94, blue: 0.91, alpha: 1.0)
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.keyboardDismissMode = .onDrag
+        view.addSubview(scrollView)
+        
+        let contentView = UIView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(contentView)
+        
+        // Centered Profile Section
+        let profileImageView = UIView()
+        profileImageView.backgroundColor = UIColor.gray.withAlphaComponent(0.3)
+        profileImageView.layer.cornerRadius = 60
+        profileImageView.layer.borderWidth = 1
+        profileImageView.layer.borderColor = UIColor.black.cgColor
+        profileImageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Add divider after profile section
+        let divider1 = UIView()
+        divider1.backgroundColor = UIColor.black.withAlphaComponent(0.2)
+        divider1.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Name section
+        let nameLabel = UILabel()
+        nameLabel.text = "NAME"
+        nameLabel.font = UIFont.systemFont(ofSize: 16, weight: .light)
+        nameLabel.textColor = UIColor.black.withAlphaComponent(0.6)
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        // OPTIMIZED Text Field - Pre-configured for maximum performance
+        nameTextField = UITextField()
+        nameTextField.text = currentName
+        nameTextField.placeholder = "Enter name"
+        nameTextField.font = UIFont.systemFont(ofSize: 18, weight: .light)
+        nameTextField.textColor = UIColor.black
+        nameTextField.backgroundColor = UIColor.white
+        nameTextField.layer.cornerRadius = 8
+        nameTextField.layer.borderWidth = 1
+        nameTextField.layer.borderColor = UIColor.black.withAlphaComponent(0.2).cgColor
+        
+        // Optimized padding views (reuse)
+        let leftPadding = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 44))
+        let rightPadding = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 44))
+        nameTextField.leftView = leftPadding
+        nameTextField.leftViewMode = .always
+        nameTextField.rightView = rightPadding
+        nameTextField.rightViewMode = .always
+        
+        // Keyboard optimizations
+        nameTextField.autocorrectionType = .no
+        nameTextField.autocapitalizationType = .words
+        nameTextField.returnKeyType = .done
+        nameTextField.enablesReturnKeyAutomatically = true
+        nameTextField.clearButtonMode = .whileEditing
+        nameTextField.smartDashesType = .no
+        nameTextField.smartQuotesType = .no
+        nameTextField.spellCheckingType = .no
+        
+        nameTextField.delegate = self
+        nameTextField.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Add divider after name section
+        let divider2 = UIView()
+        divider2.backgroundColor = UIColor.black.withAlphaComponent(0.2)
+        divider2.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Add subviews
+        contentView.addSubview(profileImageView)
+        contentView.addSubview(divider1)
+        contentView.addSubview(nameLabel)
+        contentView.addSubview(nameTextField)
+        contentView.addSubview(divider2)
+        
+        // Layout
+        NSLayoutConstraint.activate([
+            // Header layout
+            headerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            
+            cancelButton.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 12),
+            cancelButton.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            
+            saveButton.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 12),
+            saveButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
+            
+            titleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: cancelButton.centerYAnchor),
+            
+            headerDivider.topAnchor.constraint(equalTo: cancelButton.bottomAnchor, constant: 12),
+            headerDivider.leadingAnchor.constraint(equalTo: headerView.leadingAnchor),
+            headerDivider.trailingAnchor.constraint(equalTo: headerView.trailingAnchor),
+            headerDivider.heightAnchor.constraint(equalToConstant: 0.5),
+            headerDivider.bottomAnchor.constraint(equalTo: headerView.bottomAnchor),
+            
+            // Scroll view layout
+            scrollView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
+            // Centered profile section
+            profileImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 40),
+            profileImageView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            profileImageView.widthAnchor.constraint(equalToConstant: 120),
+            profileImageView.heightAnchor.constraint(equalToConstant: 120),
+            
+            divider1.topAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: 40),
+            divider1.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            divider1.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            divider1.heightAnchor.constraint(equalToConstant: 0.5),
+            
+            // Name section
+            nameLabel.topAnchor.constraint(equalTo: divider1.bottomAnchor, constant: 32),
+            nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            nameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            nameTextField.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 12),
+            nameTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            nameTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            nameTextField.heightAnchor.constraint(equalToConstant: 50),
+            
+            divider2.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 32),
+            divider2.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            divider2.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            divider2.heightAnchor.constraint(equalToConstant: 0.5),
+            divider2.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -60)
+        ])
+    }
+    
+    @objc private func cancelTapped() {
+        nameTextField.resignFirstResponder()
+        dismiss(animated: true)
+    }
+    
+    @objc private func saveTapped() {
+        let newName = nameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !newName.isEmpty {
+            // Use UserManager for global state
+            UserManager.shared.updateName(newName)
+            onSave(newName)
+        }
+        nameTextField.resignFirstResponder()
+        dismiss(animated: true)
+    }
+}
+
+extension NativeProfileEditorViewController: UITextFieldDelegate {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        saveTapped()
+        return true
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        // Provide haptic feedback when editing begins
+        Constants.Haptics.buttonPress()
+    }
+}
 
 #Preview {
     HomeView()
