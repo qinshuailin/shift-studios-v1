@@ -29,6 +29,9 @@
 	<string>Dark</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Shift needs access to your photo library to let you choose a profile picture.</string>
+
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>background-processing</string>

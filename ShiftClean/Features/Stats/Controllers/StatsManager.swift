@@ -248,11 +248,8 @@ class StatsManager: ObservableObject {
     // MARK: - Session Tracking
     
     func toggleFocusMode() {
-        if isFocusModeActive {
-            endFocusSession()
-        } else {
-            startFocusSession()
-        }
+        // Delegate to AppBlockingService which handles notifications properly
+        AppBlockingService.shared.toggleFocusMode()
     }
     
     func startFocusSession() {

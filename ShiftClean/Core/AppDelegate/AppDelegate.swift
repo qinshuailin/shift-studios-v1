@@ -17,6 +17,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         Constants.Haptics.initialize()
         print("[AppDelegate] Haptic system initialized")
         
+
         // Request FamilyControls authorization using .individual (Apple methodology)
         Task {
             do {
@@ -126,5 +127,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Warm up haptic generators when app becomes active for instant response
         Constants.Haptics.initialize()
+        
+
     }
 }

@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import Photos
 import FamilyControls
 import MessageUI
 
@@ -85,13 +87,7 @@ struct HomeView: View {
                                 Constants.Haptics.primaryButtonPress()
                                 showSettingsMenu = true
                             }) {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 35, height: 35)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.black, lineWidth: 1)
-                                    )
+                                ProfileImageView(size: 35)
                                     .offset(y: 1)
                             }
                         }
@@ -410,13 +406,7 @@ struct SettingsMenuView: View {
                             showNativeProfileEditor()
                         }) {
                             HStack(alignment: .center, spacing: 20) {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 80, height: 80)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.black, lineWidth: 1)
-                                    )
+                                ProfileImageView(size: 80)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(userManager.userName)
@@ -721,11 +711,58 @@ struct EmailConfirmationSheet: View {
 
 
 
+// MARK: - Profile Image View
+struct ProfileImageView: View {
+    let size: CGFloat
+    @State private var profileImage: UIImage?
+    
+    var body: some View {
+        ZStack {
+            if let profileImage = profileImage {
+                Image(uiImage: profileImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black, lineWidth: 1)
+                    )
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: size, height: size)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black, lineWidth: 1)
+                    )
+            }
+        }
+        .onAppear {
+            loadProfileImage()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ProfileImageChanged"))) { _ in
+            loadProfileImage()
+        }
+    }
+    
+    private func loadProfileImage() {
+        guard let imageData = UserDefaults.standard.data(forKey: "userProfileImageData"),
+              let image = UIImage(data: imageData) else {
+            profileImage = nil
+            return
+        }
+        profileImage = image
+    }
+}
+
 // MARK: - Native UIKit Profile Editor (Optimized for Zero Lag)
 class NativeProfileEditorViewController: UIViewController {
     private let currentName: String
     private let onSave: (String) -> Void
     private var nameTextField: UITextField!
+    private var profileImageView: UIView!
+    private var profileImageButton: UIButton!
     
     // Pre-warm keyboard system
     private static var isKeyboardPreWarmed = false
@@ -773,6 +810,7 @@ class NativeProfileEditorViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupKeyboardNotifications()
+        loadExistingProfileImage()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -880,13 +918,29 @@ class NativeProfileEditorViewController: UIViewController {
         contentView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(contentView)
         
-        // Centered Profile Section
-        let profileImageView = UIView()
+        // Centered Profile Section with Photo Picker
+        profileImageView = UIView()
         profileImageView.backgroundColor = UIColor.gray.withAlphaComponent(0.3)
         profileImageView.layer.cornerRadius = 60
         profileImageView.layer.borderWidth = 1
         profileImageView.layer.borderColor = UIColor.black.cgColor
         profileImageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Make profile image view tappable
+        let profileTapGesture = UITapGestureRecognizer(target: self, action: #selector(profileImageTapped))
+        profileImageView.addGestureRecognizer(profileTapGesture)
+        profileImageView.isUserInteractionEnabled = true
+        
+        // Camera/Edit Icon Button
+        let cameraIconButton = UIButton(type: .system)
+        cameraIconButton.backgroundColor = UIColor.white
+        cameraIconButton.layer.cornerRadius = 15 // 30x30 button, so radius is 15
+        cameraIconButton.layer.borderWidth = 1
+        cameraIconButton.layer.borderColor = UIColor.darkGray.cgColor
+        cameraIconButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
+        cameraIconButton.tintColor = UIColor.black
+        cameraIconButton.addTarget(self, action: #selector(cameraButtonTapped), for: .touchUpInside)
+        cameraIconButton.translatesAutoresizingMaskIntoConstraints = false
         
         // Add divider after profile section
         let divider1 = UIView()
@@ -939,6 +993,7 @@ class NativeProfileEditorViewController: UIViewController {
         
         // Add subviews
         contentView.addSubview(profileImageView)
+        contentView.addSubview(cameraIconButton)
         contentView.addSubview(divider1)
         contentView.addSubview(nameLabel)
         contentView.addSubview(nameTextField)
@@ -984,6 +1039,12 @@ class NativeProfileEditorViewController: UIViewController {
             profileImageView.widthAnchor.constraint(equalToConstant: 120),
             profileImageView.heightAnchor.constraint(equalToConstant: 120),
             
+            // Camera icon button (bottom-right of profile image, more inset)
+            cameraIconButton.trailingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: -5),
+            cameraIconButton.bottomAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: -5),
+            cameraIconButton.widthAnchor.constraint(equalToConstant: 30),
+            cameraIconButton.heightAnchor.constraint(equalToConstant: 30),
+            
             divider1.topAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: 40),
             divider1.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             divider1.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
@@ -1022,6 +1083,96 @@ class NativeProfileEditorViewController: UIViewController {
         nameTextField.resignFirstResponder()
         dismiss(animated: true)
     }
+    
+    @objc private func cameraButtonTapped() {
+        Constants.Haptics.buttonPress()
+        checkPhotoPermissionAndPresentPicker()
+    }
+    
+    @objc private func profileImageTapped() {
+        Constants.Haptics.buttonPress()
+        checkPhotoPermissionAndPresentPicker()
+    }
+    
+    private func checkPhotoPermissionAndPresentPicker() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        
+        switch status {
+        case .authorized, .limited:
+            // Permission already granted
+            presentPhotoPicker()
+        case .denied, .restricted:
+            // Permission denied, show settings alert
+            showPermissionDeniedAlert()
+        case .notDetermined:
+            // Ask for permission
+            showPermissionRequestAlert()
+        @unknown default:
+            showPermissionRequestAlert()
+        }
+    }
+    
+    private func showPermissionRequestAlert() {
+        let alert = UIAlertController(
+            title: "Access Photo Library",
+            message: "Shift needs access to your photo library to let you choose a profile picture. Would you like to grant access?",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Allow Access", style: .default) { _ in
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+                DispatchQueue.main.async {
+                    switch status {
+                    case .authorized, .limited:
+                        self.presentPhotoPicker()
+                    case .denied, .restricted:
+                        self.showPermissionDeniedAlert()
+                    case .notDetermined:
+                        break
+                    @unknown default:
+                        break
+                    }
+                }
+            }
+        })
+        
+        present(alert, animated: true)
+    }
+    
+    private func showPermissionDeniedAlert() {
+        let alert = UIAlertController(
+            title: "Photo Access Denied",
+            message: "To choose a profile picture, please enable photo access in Settings > Privacy & Security > Photos > Shift.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Open Settings", style: .default) { _ in
+            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(settingsUrl)
+            }
+        })
+        
+        present(alert, animated: true)
+    }
+    
+    private func presentPhotoPicker() {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .images
+        configuration.selectionLimit = 1
+        
+        let picker = PHPickerViewController(configuration: configuration)
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+    
+    private func loadExistingProfileImage() {
+        guard let imageData = UserDefaults.standard.data(forKey: "userProfileImageData"),
+              let image = UIImage(data: imageData) else { return }
+        
+        updateProfileImage(image)
+    }
 }
 
 extension NativeProfileEditorViewController: UITextFieldDelegate {
@@ -1033,6 +1184,54 @@ extension NativeProfileEditorViewController: UITextFieldDelegate {
     func textFieldDidBeginEditing(_ textField: UITextField) {
         // Provide haptic feedback when editing begins
         Constants.Haptics.buttonPress()
+    }
+}
+
+// MARK: - Photo Picker Delegate
+extension NativeProfileEditorViewController: PHPickerViewControllerDelegate {
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+        
+        guard let result = results.first else { return }
+        
+        result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] object, error in
+            DispatchQueue.main.async {
+                guard let self = self,
+                      let image = object as? UIImage else { return }
+                
+                self.updateProfileImage(image)
+                Constants.Haptics.photoSelected()
+            }
+        }
+    }
+    
+    private func updateProfileImage(_ image: UIImage) {
+        // Create a circular image view
+        let imageView = UIImageView(image: image)
+        imageView.contentMode = .scaleAspectFill
+        imageView.layer.cornerRadius = 60
+        imageView.layer.masksToBounds = true
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Remove any existing image views
+        profileImageView.subviews.forEach { $0.removeFromSuperview() }
+        
+        // Add the new image
+        profileImageView.addSubview(imageView)
+        
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: profileImageView.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: profileImageView.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: profileImageView.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: profileImageView.bottomAnchor)
+        ])
+        
+        // Save image to UserDefaults as Data
+        if let imageData = image.jpegData(compressionQuality: 0.8) {
+            UserDefaults.standard.set(imageData, forKey: "userProfileImageData")
+            // Notify other views to update profile image
+            NotificationCenter.default.post(name: NSNotification.Name("ProfileImageChanged"), object: nil)
+        }
     }
 }
 

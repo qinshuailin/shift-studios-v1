@@ -198,6 +198,11 @@ struct Constants {
             light()
         }
         
+        /// Photo selection - SINGLE success pulse
+        static func photoSelected() {
+            success()
+        }
+        
         // MARK: - NFC Enhanced Patterns
         
         /// NFC scan initiated - SINGLE medium pulse
