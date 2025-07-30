@@ -63,31 +63,13 @@ class DeviceActivityManager {
         let center = DeviceActivityCenter()
         do {
             try center.startMonitoring(DeviceActivityName("daily"), during: schedule)
-            print("[DeviceActivityManager] DeviceActivity monitoring scheduled for daily.")
+            print("[DeviceActivityManager] Monitoring scheduled")
         } catch {
-            print("[DeviceActivityManager] Failed to schedule DeviceActivity monitoring: \(error)")
+            print("[DeviceActivityManager] Failed to schedule monitoring: \(error)")
         }
     }
 
-    // Schedules a short test interval for debugging extension triggering (minimum allowed by iOS is ~15 minutes)
-    func scheduleTestUsageTracking() {
-        let now = Date()
-        let inFifteenMinutes = now.addingTimeInterval(15 * 60)
-        let start = Calendar.current.dateComponents([.hour, .minute], from: now)
-        let end = Calendar.current.dateComponents([.hour, .minute], from: inFifteenMinutes)
-        let schedule = DeviceActivitySchedule(
-            intervalStart: start,
-            intervalEnd: end,
-            repeats: false
-        )
-        let center = DeviceActivityCenter()
-        do {
-            try center.startMonitoring(DeviceActivityName("test"), during: schedule)
-            print("[DeviceActivityManager] DeviceActivity monitoring scheduled for 15-minute test interval.")
-        } catch {
-            print("[DeviceActivityManager] Failed to schedule test DeviceActivity monitoring: \(error)")
-        }
-    }
+
 
     func printExtensionDebugLog() {
         if let logURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.ericqin.shift")?.appendingPathComponent("debug.txt"),

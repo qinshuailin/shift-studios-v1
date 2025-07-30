@@ -271,6 +271,8 @@ struct GoalEditorSheet: View {
     @ObservedObject var statsManager = StatsManager.shared
     @State private var hours: Int = 0
     @State private var minutes: Int = 0
+    @State private var cancelPressed = false
+    @State private var savePressed = false
     
     var body: some View {
         ZStack {
@@ -295,16 +297,24 @@ struct GoalEditorSheet: View {
                             .foregroundColor(.black)
                         Stepper("", value: $hours, in: 0...23)
                             .labelsHidden()
-                        Button(action: { 
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                isPresented = false 
+                        Button(action: {
+                            Constants.Haptics.primaryButtonPress()
+                            cancelPressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isPresented = false 
+                                    cancelPressed = false
+                                }
                             }
                         }) {
                             Text("cancel")
                                 .font(.system(size: 20, weight: .light, design: .default))
+                                .foregroundColor(.black)
+                                .opacity(cancelPressed ? 0.5 : 1.0)
                         }
                         .padding(.top, 8)
-                        .buttonStyle(FadeTextButtonStyle())
+                        .animation(.easeInOut(duration: 0.15), value: cancelPressed)
+                        .buttonStyle(PlainButtonStyle())
                     }
                     VStack(spacing: 8) {
                         Text("minutes")
@@ -316,18 +326,26 @@ struct GoalEditorSheet: View {
                         Stepper("", value: $minutes, in: 0...59)
                             .labelsHidden()
                         Button(action: {
-                            let total = hours * 60 + minutes
-                            UserDefaults.standard.set(total, forKey: "dailyGoalMinutes")
-                            statsManager.dailyGoal = total
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                isPresented = false
+                            Constants.Haptics.primaryButtonPress()
+                            savePressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                let total = hours * 60 + minutes
+                                UserDefaults.standard.set(total, forKey: "dailyGoalMinutes")
+                                statsManager.dailyGoal = total
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isPresented = false
+                                    savePressed = false
+                                }
                             }
                         }) {
                             Text("save")
                                 .font(.system(size: 20, weight: .light, design: .default))
+                                .foregroundColor(.black)
+                                .opacity(savePressed ? 0.5 : 1.0)
                         }
                         .padding(.top, 8)
-                        .buttonStyle(FadeTextButtonStyle())
+                        .animation(.easeInOut(duration: 0.15), value: savePressed)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.top, 8)
@@ -358,6 +376,7 @@ struct FadeTextButtonStyle: ButtonStyle {
 struct SettingsMenuView: View {
     @Binding var isPresented: Bool
     @ObservedObject private var userManager = UserManager.shared
+    @State private var profilePressed = false
     @State private var contactPressed = false
     @State private var suggestPressed = false
     @State private var privacyPressed = false
@@ -365,6 +384,9 @@ struct SettingsMenuView: View {
     @State private var showEmailConfirmation = false
     @State private var pendingEmailSubject = ""
     @State private var showProfileEditor = false
+    @State private var showExternalLinkConfirmation = false
+    @State private var pendingExternalURL = ""
+    @State private var pendingLinkTitle = ""
 
     
     var appVersion: String {
@@ -400,34 +422,39 @@ struct SettingsMenuView: View {
                     Divider()
                     
                     // Profile Section
-                    VStack(alignment: .leading, spacing: 24) {
-                        Button(action: {
-                            Constants.Haptics.primaryButtonPress()
+                    Button(action: {
+                        Constants.Haptics.primaryButtonPress()
+                        profilePressed = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                             showNativeProfileEditor()
-                        }) {
-                            HStack(alignment: .center, spacing: 20) {
-                                ProfileImageView(size: 80)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(userManager.userName)
-                                        .font(.system(size: 32, weight: .light, design: .default))
-                                        .foregroundColor(.black)
-                                    Text("tap to edit profile")
-                                        .font(.system(size: 18, weight: .light, design: .default))
-                                        .foregroundColor(.black.opacity(0.6))
-                                }
-                                
-                                Spacer()
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                profilePressed = false
                             }
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(PlainButtonStyle())
+                    }) {
+                        HStack(alignment: .center, spacing: 20) {
+                            ProfileImageView(size: 80)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(userManager.userName)
+                                    .font(.system(size: 32, weight: .light, design: .default))
+                                    .foregroundColor(.black)
+                                Text("tap to edit profile")
+                                    .font(.system(size: 18, weight: .light, design: .default))
+                                    .foregroundColor(.black.opacity(0.6))
+                            }
+                            
+                            Spacer()
+                        }
                         .padding(.horizontal, 20)
                         .padding(.top, 24)
                         .padding(.bottom, 32)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .background(profilePressed ? Color(red: 0.85, green: 0.85, blue: 0.85) : Color(red: 0.96, green: 0.94, blue: 0.91))
+                        .animation(.easeInOut(duration: 0.15), value: profilePressed)
                     }
-                    .frame(maxWidth: .infinity)
-                    .background(Color.clear)
+                    .buttonStyle(PlainButtonStyle())
                     
                     Divider()
                     
@@ -496,8 +523,10 @@ struct SettingsMenuView: View {
                         Constants.Haptics.primaryButtonPress()
                         privacyPressed = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                            // Handle privacy policy action
-                            withAnimation(.easeInOut(duration: 0.15)) {
+                            pendingExternalURL = "https://shiftstudios.space/policies/privacy-policy"
+                            pendingLinkTitle = "Privacy Policy"
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showExternalLinkConfirmation = true
                                 privacyPressed = false
                             }
                         }
@@ -523,8 +552,10 @@ struct SettingsMenuView: View {
                         Constants.Haptics.primaryButtonPress()
                         termsPressed = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                            // Handle terms of service action
-                            withAnimation(.easeInOut(duration: 0.15)) {
+                            pendingExternalURL = "https://shiftstudios.space/policies/terms-of-service"
+                            pendingLinkTitle = "TOS"
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showExternalLinkConfirmation = true
                                 termsPressed = false
                             }
                         }
@@ -587,6 +618,33 @@ struct SettingsMenuView: View {
                 }
             }
             
+            // External link confirmation overlay
+            ZStack {
+                if showExternalLinkConfirmation {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                            .onTapGesture { 
+                                withAnimation(.easeInOut(duration: 0.3)) { 
+                                    showExternalLinkConfirmation = false 
+                                } 
+                            }
+                        ExternalLinkConfirmationSheet(
+                            isPresented: $showExternalLinkConfirmation,
+                            linkTitle: pendingLinkTitle,
+                            onConfirm: {
+                                openExternalLink(url: pendingExternalURL)
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showExternalLinkConfirmation = false
+                                }
+                            }
+                        )
+                    }
+                    .opacity(showExternalLinkConfirmation ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: showExternalLinkConfirmation)
+                }
+            }
+            
             // Profile editor overlay
             ZStack {
                 if showProfileEditor {
@@ -613,6 +671,14 @@ struct SettingsMenuView: View {
         let urlString = "mailto:\(email)?subject=\(encodedSubject)"
         
         if let url = URL(string: urlString) {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            }
+        }
+    }
+    
+    private func openExternalLink(url: String) {
+        if let url = URL(string: url) {
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             }
@@ -648,6 +714,8 @@ struct EmailConfirmationSheet: View {
     @Binding var isPresented: Bool
     let subject: String
     let onConfirm: () -> Void
+    @State private var noPressed = false
+    @State private var yesPressed = false
     
     var body: some View {
         ZStack {
@@ -671,27 +739,41 @@ struct EmailConfirmationSheet: View {
                 
                 HStack(spacing: 32) {
                     VStack(spacing: 8) {
-                        Button(action: { 
-                            withAnimation(.easeInOut(duration: 0.3)) { 
-                                isPresented = false 
+                        Button(action: {
+                            Constants.Haptics.primaryButtonPress()
+                            noPressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                withAnimation(.easeInOut(duration: 0.3)) { 
+                                    isPresented = false 
+                                    noPressed = false
+                                }
                             }
                         }) {
                             Text("No")
                                 .font(.system(size: 18, weight: .light, design: .default))
                                 .foregroundColor(.black)
+                                .opacity(noPressed ? 0.5 : 1.0)
                         }
-                        .buttonStyle(FadeTextButtonStyle())
+                        .animation(.easeInOut(duration: 0.15), value: noPressed)
+                        .buttonStyle(PlainButtonStyle())
                     }
                     
                     VStack(spacing: 8) {
                         Button(action: {
-                            onConfirm()
+                            Constants.Haptics.primaryButtonPress()
+                            yesPressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                onConfirm()
+                                yesPressed = false
+                            }
                         }) {
                             Text("Yes")
                                 .font(.system(size: 18, weight: .light, design: .default))
                                 .foregroundColor(.black)
+                                .opacity(yesPressed ? 0.5 : 1.0)
                         }
-                        .buttonStyle(FadeTextButtonStyle())
+                        .animation(.easeInOut(duration: 0.15), value: yesPressed)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.top, 6)
@@ -710,6 +792,84 @@ struct EmailConfirmationSheet: View {
 
 
 
+
+// MARK: - External Link Confirmation Sheet
+struct ExternalLinkConfirmationSheet: View {
+    @Binding var isPresented: Bool
+    let linkTitle: String
+    let onConfirm: () -> Void
+    @State private var noPressed = false
+    @State private var yesPressed = false
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture { 
+                    withAnimation(.easeInOut(duration: 0.3)) { 
+                        isPresented = false 
+                    } 
+                }
+            VStack(spacing: 24) {
+                Text("Open \(linkTitle)?")
+                    .font(.system(size: 28, weight: .light, design: .default))
+                    .foregroundColor(.black)
+                
+                Text("This will take you outside this app to view the \(linkTitle.lowercased()) in your browser.")
+                    .font(.system(size: 16, weight: .light, design: .default))
+                    .foregroundColor(.black.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                
+                HStack(spacing: 32) {
+                    VStack(spacing: 8) {
+                        Button(action: {
+                            Constants.Haptics.primaryButtonPress()
+                            noPressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                withAnimation(.easeInOut(duration: 0.3)) { 
+                                    isPresented = false 
+                                    noPressed = false
+                                }
+                            }
+                        }) {
+                            Text("No")
+                                .font(.system(size: 18, weight: .light, design: .default))
+                                .foregroundColor(.black)
+                                .opacity(noPressed ? 0.5 : 1.0)
+                        }
+                        .animation(.easeInOut(duration: 0.15), value: noPressed)
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
+                    VStack(spacing: 8) {
+                        Button(action: {
+                            Constants.Haptics.primaryButtonPress()
+                            yesPressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                onConfirm()
+                                yesPressed = false
+                            }
+                        }) {
+                            Text("Yes")
+                                .font(.system(size: 18, weight: .light, design: .default))
+                                .foregroundColor(.black)
+                                .opacity(yesPressed ? 0.5 : 1.0)
+                        }
+                        .animation(.easeInOut(duration: 0.15), value: yesPressed)
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.top, 6)
+            }
+            .padding(24)
+            .background(Color(red: 0.96, green: 0.94, blue: 0.91))
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.10), radius: 16, x: 0, y: 4)
+            .frame(minWidth: 260, maxWidth: 320)
+        }
+    }
+}
 
 // MARK: - Profile Image View
 struct ProfileImageView: View {

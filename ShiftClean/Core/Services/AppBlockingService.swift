@@ -114,7 +114,7 @@ class AppBlockingService: ObservableObject {
     
     private func applyAppRestrictions(_ selection: FamilyActivitySelection) {
         // Set the selected applications to be shielded
-        print("[AppBlockingService] Applying shield to: \(selection.applicationTokens)")
+        print("[AppBlockingService] Applying shield to \(selection.applicationTokens.count) apps")
         store.shield.applications = selection.applicationTokens
     }
 }

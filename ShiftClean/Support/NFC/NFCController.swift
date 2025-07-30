@@ -17,7 +17,7 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
     // Inside beginScanning() method
     func beginScanning() {
         guard NFCNDEFReaderSession.readingAvailable else {
-            print("NFC not supported on this device")
+            print("[NFC] Not supported on device")
             // Provide error feedback for unsupported device
             Constants.Haptics.error()
             return
@@ -29,18 +29,18 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
         
         // Provide haptic feedback when scanning begins
         Constants.Haptics.nfcScanStart()
-        print("NFC scanning started with haptic feedback")
+        print("[NFC] Scanning started")
     }
     
     func readerSessionDidBecomeActive(_ session: NFCNDEFReaderSession) {
-        print("NFC session is active")
+        print("[NFC] Session active")
         
         // Provide light haptic feedback when session becomes active
         Constants.Haptics.light()
     }
     
     func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
-        print("NFC scan ended: \(error.localizedDescription)")
+                    print("[NFC] Scan ended: \(error.localizedDescription)")
         
         // INSTANT haptic feedback - zero delay, maximum responsiveness
         if let nfcError = error as? NFCReaderError {
@@ -48,34 +48,34 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
             case .readerSessionInvalidationErrorUserCanceled:
                 // User tapped "X" - INSTANT ultra-light pulse
                 Constants.Haptics.nfcScanCanceled()
-                print("NFC scan canceled by user")
+                print("[NFC] Scan canceled")
                 
             case .readerSessionInvalidationErrorSessionTimeout:
                 // Session timed out - immediate warning
                 Constants.Haptics.gentleWarning()
-                print("NFC scan timed out")
+                print("[NFC] Scan timed out")
                 
             default:
                 // Other errors - immediate error feedback
                 Constants.Haptics.nfcScanError()
-                print("NFC scan error: \(nfcError.localizedDescription)")
+                print("[NFC] Error: \(nfcError.localizedDescription)")
             }
         } else {
             // Fallback - immediate response
             if error.localizedDescription.contains("canceled") || error.localizedDescription.contains("cancelled") {
                 Constants.Haptics.nfcScanCanceled()
-                print("NFC scan canceled")
+                print("[NFC] Canceled")
             } else {
                 Constants.Haptics.nfcScanError()
-                print("NFC scan failed: \(error.localizedDescription)")
+                print("[NFC] Failed: \(error.localizedDescription)")
             }
         }
     }
     
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
-        print("Raw NFC NDEF Messages: \(messages)")
+        print("[NFC] Raw NDEF: \(messages.count) messages")
         guard let record = messages.first?.records.first else {
-            print("No valid NDEF records found")
+            print("[NFC] No valid NDEF records")
             return
         }
         
@@ -83,11 +83,11 @@ class NFCController: NSObject, NFCNDEFReaderSessionDelegate {
         let languageCodeLength = Int(payloadData.first ?? 0)
         let textData = payloadData.dropFirst(languageCodeLength + 1)
         guard let tagString = String(data: textData, encoding: .utf8) else {
-            print("Failed to decode NFC payload as UTF-8 string")
+            print("[NFC] Failed to decode payload")
             return
         }
         
-        print("Scanned NFC Tag Payload: \(tagString)")
+        print("[NFC] Tag payload: \(tagString)")
         
         DispatchQueue.main.async {
             // Notify delegate about the tag scan

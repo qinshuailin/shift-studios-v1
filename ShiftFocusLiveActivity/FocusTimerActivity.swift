@@ -72,17 +72,17 @@ struct FocusTimerLiveActivity: Widget {
                 compactLeading: {
                     Text(timerString(from: context.state.elapsedSeconds))
                         .font(.system(size: 14, weight: .light, design: .default))
-                        .foregroundColor(.black)
+                        .foregroundColor(.white)
                 },
                 compactTrailing: {
                     Text("focus")
                         .font(.system(size: 12, weight: .light, design: .default))
-                        .foregroundColor(.black.opacity(0.6))
+                        .foregroundColor(.white.opacity(0.6))
                 },
                 minimal: {
                     Text("focus")
                         .font(.system(size: 10, weight: .light, design: .default))
-                        .foregroundColor(.black.opacity(0.6))
+                        .foregroundColor(.white.opacity(0.6))
                 }
             )
         }

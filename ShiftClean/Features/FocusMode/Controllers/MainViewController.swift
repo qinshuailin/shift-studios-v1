@@ -71,8 +71,7 @@ class MainViewController: UIViewController {
         // Hide navigation bar on this screen
         navigationController?.setNavigationBarHidden(true, animated: animated)
         
-        // Ensure tab bar is visible
-        // tabBarController?.tabBar.isHidden = false // <--- TEMPORARILY DISABLED
+
         
         // Update UI based on current state
         // Ensure time saved display is up to date when app enters foreground
@@ -118,7 +117,7 @@ class MainViewController: UIViewController {
     }
 
     @objc private func appWillEnterForeground() {
-        print("[MainViewController] 🌟 App entering foreground - BULLETPROOF RESTART")
+        print("[MainViewController] App entering foreground")
         
         // Refresh everything when returning to foreground
         StatsManager.shared.updateTotalTimeSavedToday()
@@ -126,7 +125,7 @@ class MainViewController: UIViewController {
         
         // BULLETPROOF: If focus mode is active, aggressively restart timers
         if StatsManager.shared.isFocusModeActive {
-            print("[MainViewController] 🔥 Focus mode active - forcing timer restart")
+            print("[MainViewController] Focus mode active, restarting timer")
             // Force restart the Live Activity timer
             StatsManager.shared.startLiveActivityTimer()
         }

@@ -18,7 +18,7 @@ class MyModel: ObservableObject {
     
     @Published var selectionToDiscourage = FamilyActivitySelection() {
         willSet {
-            print("[MyModel] New selection: \(newValue)")
+            print("[MyModel] New selection: \(newValue.applicationTokens.count) apps")
             // Save selection to AppBlockingService instead of managing shield directly
             AppBlockingService.shared.setAppsToBlock(newValue)
         }
@@ -34,7 +34,7 @@ class MyModel: ObservableObject {
         let center = DeviceActivityCenter()
         do {
             try center.startMonitoring(.daily, during: schedule)
-            print("[MyModel] DeviceActivity monitoring scheduled for .daily")
+            print("[MyModel] DeviceActivity monitoring scheduled")
         } catch {
             print("[MyModel] Could not start monitoring: \(error)")
         }
@@ -44,7 +44,7 @@ class MyModel: ObservableObject {
     
     // CRITICAL: Method to clear all problematic restrictions
     func clearAllSystemRestrictions() {
-        print("[MyModel] Clearing all system-wide restrictions...")
+        print("[MyModel] Clearing system restrictions")
         store.dateAndTime.requireAutomaticDateAndTime = false
         store.account.lockAccounts = false
         store.passcode.lockPasscode = false
@@ -55,6 +55,6 @@ class MyModel: ObservableObject {
         store.media.denyExplicitContent = false
         store.gameCenter.denyMultiplayerGaming = false
         store.media.denyMusicService = false
-        print("[MyModel] System restrictions cleared - apps should reappear")
+        print("[MyModel] System restrictions cleared")
     }
 } 

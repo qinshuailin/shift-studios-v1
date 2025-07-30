@@ -15,16 +15,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Initialize haptic system for instant response
         Constants.Haptics.initialize()
-        print("[AppDelegate] Haptic system initialized")
+        print("[AppDelegate] Haptics initialized")
         
 
         // Request FamilyControls authorization using .individual (Apple methodology)
         Task {
             do {
                 try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                print("[AppDelegate] FamilyControls authorization success (individual)")
+                print("[AppDelegate] FamilyControls authorized")
             } catch {
-                print("[AppDelegate] FamilyControls authorization error: \(error)")
+                print("[AppDelegate] FamilyControls error: \(error)")
             }
         }
         
@@ -33,12 +33,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             let granted = await DeviceActivityManager.shared.requestAuthorization()
             if granted {
                 DeviceActivityManager.shared.scheduleUsageTracking()
-                DeviceActivityManager.shared.scheduleTestUsageTracking() // Debug: schedule short test interval
                 // Initialize MyModel monitoring for device activity
                 MyModel.shared.initiateMonitoring()
                 // CRITICAL: Clear any problematic system restrictions
                 MyModel.shared.clearAllSystemRestrictions()
-                print("[AppDelegate] Device activity tracking initialized and system restrictions cleared")
+                print("[AppDelegate] Device activity initialized")
             }
         }
         scheduleDeviceActivityReport() // Schedule device activity monitoring on launch
