@@ -29,9 +29,13 @@ struct FocusTimerLiveActivityView: View {
     }
 
     private func timerString(from seconds: Int) -> String {
-        let h = seconds / 3600
-        let m = (seconds % 3600) / 60
-        let s = seconds % 60
+        // BULLETPROOF: Ensure seconds is never negative or impossibly large
+        let safeSeconds = max(0, min(seconds, 86400 * 7)) // Cap at 7 days
+        
+        let h = safeSeconds / 3600
+        let m = (safeSeconds % 3600) / 60
+        let s = safeSeconds % 60
+        
         if h > 0 {
             return String(format: "%d:%02d:%02d", h, m, s)
         } else {
@@ -89,9 +93,13 @@ struct FocusTimerLiveActivity: Widget {
     }
     
     private func timerString(from seconds: Int) -> String {
-        let h = seconds / 3600
-        let m = (seconds % 3600) / 60
-        let s = seconds % 60
+        // BULLETPROOF: Ensure seconds is never negative or impossibly large  
+        let safeSeconds = max(0, min(seconds, 86400 * 7)) // Cap at 7 days
+        
+        let h = safeSeconds / 3600
+        let m = (safeSeconds % 3600) / 60
+        let s = safeSeconds % 60
+        
         if h > 0 {
             return String(format: "%d:%02d:%02d", h, m, s)
         } else {

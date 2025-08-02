@@ -40,6 +40,19 @@ class StatsManager: ObservableObject {
     private var liveUpdateTimer: Timer? // NEW: Timer for live updates
     private let appGroupUsageKey = "AppUsageData"
     
+    // SIMPLE: Clear focus state using simple UserDefaults
+    private func clearFocusState() {
+        print("[StatsManager] Clearing focus state")
+        UserDefaults.standard.set(false, forKey: "focusModeActive")
+        UserDefaults.standard.removeObject(forKey: "focusModeStartTime")
+        isFocusModeActive = false
+        focusModeStartTime = nil
+        
+        // Stop timers if they're running
+        liveActivityTimer?.invalidate()
+        liveActivityTimer = nil
+    }
+    
     // CRITICAL: Force reset all focus session state
     private func forceResetFocusState() {
         print("[StatsManager] Force resetting focus state")
@@ -81,60 +94,54 @@ class StatsManager: ObservableObject {
             object: nil
         )
         
-        // Load focus mode state from UserDefaults
-        let savedFocusState = userDefaults.bool(forKey: focusModeActiveKey)
-        print("[StatsManager] Loaded focus state: \(savedFocusState)")
+        // SIMPLE: Load focus mode state from UserDefaults like everything else
+        let savedFocusState = UserDefaults.standard.bool(forKey: "focusModeActive")
+        print("[StatsManager] DEBUG: Raw UserDefaults focusModeActive = \(savedFocusState)")
         
-        // Check if there's a valid active session
         if savedFocusState {
-            // Verify we actually have a start time
-            if let startTime = userDefaults.object(forKey: "focusModeStartTime") as? Date {
-                // Check if the session is recent (within 24 hours)
+            if let startTime = UserDefaults.standard.object(forKey: "focusModeStartTime") as? Date {
                 let timeSinceStart = Date().timeIntervalSince(startTime)
+                print("[StatsManager] DEBUG: Found start time \(startTime), elapsed \(timeSinceStart) seconds")
+                
                 if timeSinceStart < 24 * 60 * 60 { // 24 hours
-                    print("[StatsManager] Restoring session from \(startTime)")
+                    print("[StatsManager] Restoring valid session")
                     isFocusModeActive = true
                     focusModeStartTime = startTime
+                    
+                    // Restart Live Activity
+                    let elapsedSeconds = Int(timeSinceStart)
+                    let goalMinutes = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
+                    let goal = goalMinutes > 0 ? goalMinutes : 120
+                    FocusLiveActivityManager.shared.start(goalMinutes: goal)
+                    FocusLiveActivityManager.shared.update(elapsedSeconds: elapsedSeconds)
                     startLiveActivityTimer()
+                    
+                    print("[StatsManager] ✅ Session restored: active=\(isFocusModeActive)")
                 } else {
-                    print("[StatsManager] Session expired (\(timeSinceStart/3600)h), clearing")
-                    // Clear stale state
-                    userDefaults.set(false, forKey: focusModeActiveKey)
-                    userDefaults.removeObject(forKey: "focusModeStartTime")
-                    isFocusModeActive = false
-                    focusModeStartTime = nil
+                    print("[StatsManager] Session expired, clearing")
+                    UserDefaults.standard.set(false, forKey: "focusModeActive")
+                    UserDefaults.standard.removeObject(forKey: "focusModeStartTime")
                 }
             } else {
                 print("[StatsManager] No start time found, clearing state")
-                // Clear inconsistent state
-                userDefaults.set(false, forKey: focusModeActiveKey)
-                isFocusModeActive = false
-                focusModeStartTime = nil
+                UserDefaults.standard.set(false, forKey: "focusModeActive")
             }
         } else {
-            print("[StatsManager] No active session found")
-            isFocusModeActive = false
-            focusModeStartTime = nil
+            print("[StatsManager] No active session in UserDefaults")
         }
         
-        // CRITICAL: Synchronize with AppBlockingService state
+        // Sync with AppBlockingService (but don't override if we just restored)
         let appBlockingActive = AppBlockingService.shared.isFocusModeActive()
-        if isFocusModeActive != appBlockingActive {
-                    print("[StatsManager] State mismatch: Stats=\(isFocusModeActive), Blocking=\(appBlockingActive)")
-        print("[StatsManager] Syncing to blocking state: \(appBlockingActive)")
-            isFocusModeActive = appBlockingActive
-            if !appBlockingActive {
-                focusModeStartTime = nil
-                userDefaults.set(false, forKey: focusModeActiveKey)
-                userDefaults.removeObject(forKey: "focusModeStartTime")
-            }
-        }
+        print("[StatsManager] Final state check: Stats=\(isFocusModeActive), Blocking=\(appBlockingActive)")
         
-        // CRITICAL: Additional validation - if isFocusModeActive but no focusModeStartTime, reset everything
-        if isFocusModeActive && focusModeStartTime == nil {
-                    print("[StatsManager] Invalid state: active but no start time")
-        print("[StatsManager] Force resetting state")
-            forceResetFocusState()
+        if isFocusModeActive != appBlockingActive {
+            print("[StatsManager] Syncing: Stats says \(isFocusModeActive), AppBlocking says \(appBlockingActive)")
+            // Trust the UserDefaults state we just loaded
+            if isFocusModeActive {
+                AppBlockingService.shared.activateFocusMode()
+            } else {
+                AppBlockingService.shared.deactivateFocusMode()
+            }
         }
         
         print("[StatsManager] Init complete: active=\(isFocusModeActive)")
@@ -149,6 +156,9 @@ class StatsManager: ObservableObject {
         DispatchQueue.main.async {
             self.objectWillChange.send()
         }
+        
+        // BULLETPROOF: Schedule periodic state verification
+        scheduleStateVerification()
     }
     
     func loadData() {
@@ -280,9 +290,9 @@ class StatsManager: ObservableObject {
         saveFocusSession(newSession)
         print("[StatsManager] Created session: \(newSession.id)")
         
-        // Persist state
-        userDefaults.set(true, forKey: focusModeActiveKey)
-        userDefaults.set(now, forKey: "focusModeStartTime")
+        // Persist state using simple UserDefaults like everything else
+        UserDefaults.standard.set(true, forKey: "focusModeActive")
+        UserDefaults.standard.set(now, forKey: "focusModeStartTime")
         
         print("[StatsManager] Session started at: \(now)")
         
@@ -350,9 +360,9 @@ class StatsManager: ObservableObject {
         sessions.append(lastSession)
         saveFocusSessions(sessions)
         
-        // CRITICAL: Clear all state properly
-        userDefaults.set(false, forKey: focusModeActiveKey)
-        userDefaults.removeObject(forKey: "focusModeStartTime") // Remove saved start time
+        // CRITICAL: Clear all state properly using simple UserDefaults
+        UserDefaults.standard.set(false, forKey: "focusModeActive")
+        UserDefaults.standard.removeObject(forKey: "focusModeStartTime")
         isFocusModeActive = false
         focusModeStartTime = nil
         
@@ -703,17 +713,34 @@ class StatsManager: ObservableObject {
     }
     
     deinit {
+        // Clean up all timers
         liveUpdateTimer?.invalidate()
         refreshTimer?.invalidate()
         liveActivityTimer?.invalidate()
         watchdogTimer?.invalidate()
+        emergencyBackupTimer?.invalidate()
+        systemRecoveryTimer?.invalidate()
+        stateVerificationTimer?.invalidate()
+        
+        // End background task
+        endBackgroundTask()
         
         // Remove observers
         NotificationCenter.default.removeObserver(self)
     }
     
+    // NUCLEAR-LEVEL BULLETPROOF: Multiple background task handlers
+    private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+    private var emergencyBackupTimer: Timer?
+    private var systemRecoveryTimer: Timer?
+    
     // BULLETPROOF: Restart timers when app goes to background
     @objc private func appDidEnterBackground() {
+        // Start background task to keep timer running
+        startBackgroundTask()
+        
+        // Schedule emergency backup mechanisms
+        scheduleEmergencyBackup()
         print("[StatsManager] App entering background")
         
         if isFocusModeActive {
@@ -745,6 +772,230 @@ class StatsManager: ObservableObject {
             
             // Update total time saved
             updateTotalTimeSavedToday()
+        }
+        
+        // End background task when returning to foreground
+        endBackgroundTask()
+        
+        // Stop emergency backup mechanisms
+        stopEmergencyBackup()
+    }
+    
+    // NUCLEAR BULLETPROOF LEVEL 1: Background Task Protection
+    private func startBackgroundTask() {
+        guard backgroundTaskID == .invalid else { return }
+        
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "FocusTimerBackground") { [weak self] in
+            print("[StatsManager] Background task expired, attempting emergency protocols")
+            self?.activateEmergencyProtocols()
+            self?.endBackgroundTask()
+        }
+        
+        print("[StatsManager] Started background task: \(backgroundTaskID.rawValue)")
+    }
+    
+    private func endBackgroundTask() {
+        guard backgroundTaskID != .invalid else { return }
+        
+        UIApplication.shared.endBackgroundTask(backgroundTaskID)
+        backgroundTaskID = .invalid
+        print("[StatsManager] Ended background task")
+    }
+    
+    // NUCLEAR BULLETPROOF LEVEL 2: Emergency Backup Systems
+    private func scheduleEmergencyBackup() {
+        // Emergency backup timer - runs every 30 seconds in background
+        emergencyBackupTimer?.invalidate()
+        emergencyBackupTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            self?.emergencyTimerUpdate()
+        }
+        
+        if let timer = emergencyBackupTimer {
+            RunLoop.main.add(timer, forMode: .common)
+            RunLoop.main.add(timer, forMode: .default)
+        }
+        
+        // System recovery timer - checks every 10 seconds for dead timers
+        systemRecoveryTimer?.invalidate()
+        systemRecoveryTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+            self?.performSystemRecovery()
+        }
+        
+        if let timer = systemRecoveryTimer {
+            RunLoop.main.add(timer, forMode: .common)
+            RunLoop.main.add(timer, forMode: .default)
+        }
+        
+        print("[StatsManager] Emergency backup systems activated")
+    }
+    
+    private func stopEmergencyBackup() {
+        emergencyBackupTimer?.invalidate()
+        emergencyBackupTimer = nil
+        
+        systemRecoveryTimer?.invalidate()
+        systemRecoveryTimer = nil
+        
+        print("[StatsManager] Emergency backup systems deactivated")
+    }
+    
+    // NUCLEAR BULLETPROOF LEVEL 3: Emergency Timer Update
+    private func emergencyTimerUpdate() {
+        guard isFocusModeActive, let start = focusModeStartTime else { return }
+        
+        let elapsed = Int(Date().timeIntervalSince(start))
+        print("[StatsManager] Emergency backup update: \(elapsed)s")
+        
+        // Force Live Activity update through emergency channel
+        FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+        
+        // Save state to UserDefaults as backup
+        UserDefaults.standard.set(elapsed, forKey: "focusEmergencyElapsed")
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "focusEmergencyTimestamp")
+    }
+    
+    // NUCLEAR BULLETPROOF LEVEL 4: System Recovery Protocols
+    private func performSystemRecovery() {
+        guard isFocusModeActive else { return }
+        
+        // Check if main timer died
+        let timeSinceLastHeartbeat = Date().timeIntervalSince(lastTimerHeartbeat)
+        if timeSinceLastHeartbeat > 10 { // Main timer has been dead for 10+ seconds
+            print("[StatsManager] CRITICAL: Main timer dead for \(timeSinceLastHeartbeat)s, initiating recovery")
+            
+            // DEFCON 1: Restart everything
+            startLiveActivityTimer()
+            
+            // DEFCON 2: Force Live Activity refresh
+            if let start = focusModeStartTime {
+                let elapsed = Int(Date().timeIntervalSince(start))
+                FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+            }
+        }
+        
+        // Check if Live Activity is missing entirely
+        if !FocusLiveActivityManager.shared.isLiveActivityActive() && isFocusModeActive {
+            print("[StatsManager] CRITICAL: Live Activity missing, attempting resurrection")
+            
+            if let start = focusModeStartTime {
+                let elapsed = Int(Date().timeIntervalSince(start))
+                let goal = UserDefaults.standard.integer(forKey: "dailyGoalMinutes")
+                
+                // Resurrect Live Activity with current progress
+                FocusLiveActivityManager.shared.start(goalMinutes: goal > 0 ? goal : 120)
+                
+                // Wait a moment then update
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+                }
+            }
+        }
+    }
+    
+    // NUCLEAR BULLETPROOF LEVEL 5: Emergency Protocols
+    private func activateEmergencyProtocols() {
+        print("[StatsManager] ACTIVATING EMERGENCY PROTOCOLS - TIMER MUST SURVIVE")
+        
+        guard isFocusModeActive, let start = focusModeStartTime else { return }
+        
+        // Calculate current elapsed time
+        let elapsed = Int(Date().timeIntervalSince(start))
+        
+        // Emergency update to Live Activity
+        FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed)
+        
+        // Save critical state data
+        UserDefaults.standard.set(elapsed, forKey: "focusEmergencyElapsed")
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "focusEmergencyTimestamp")
+        UserDefaults.standard.set(start.timeIntervalSince1970, forKey: "focusEmergencyStart")
+        
+        // Schedule one final update attempt
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            FocusLiveActivityManager.shared.update(elapsedSeconds: elapsed + 1)
+        }
+        
+        print("[StatsManager] Emergency protocols executed - elapsed: \(elapsed)s")
+    }
+    
+    // BULLETPROOF: Periodic state verification
+    private var stateVerificationTimer: Timer?
+    
+    private func scheduleStateVerification() {
+        stateVerificationTimer?.invalidate()
+        
+        // Verify state every 30 seconds
+        stateVerificationTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            self?.verifyStateConsistency()
+        }
+        
+        if let timer = stateVerificationTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
+        
+        print("[StatsManager] State verification timer scheduled")
+    }
+    
+    private func verifyStateConsistency() {
+        // Check if our local state matches UserDefaults and AppBlocking
+        let persistentActive = UserDefaults.standard.bool(forKey: "focusModeActive")
+        let appBlockingActive = AppBlockingService.shared.isFocusModeActive()
+        
+        if self.isFocusModeActive != persistentActive || self.isFocusModeActive != appBlockingActive {
+            print("[StatsManager] ⚠️ State inconsistency detected!")
+            print("  Local: \(self.isFocusModeActive)")
+            print("  UserDefaults: \(persistentActive)")
+            print("  AppBlocking: \(appBlockingActive)")
+            
+            // Use majority vote to determine correct state
+            let states = [self.isFocusModeActive, persistentActive, appBlockingActive]
+            let trueCount = states.filter { $0 }.count
+            let correctState = trueCount >= 2
+            
+            print("[StatsManager] Correcting state to: \(correctState)")
+            
+            // Update all sources to the correct state
+            self.isFocusModeActive = correctState
+            UserDefaults.standard.set(correctState, forKey: "focusModeActive")
+            
+            if correctState {
+                // If should be active, ensure start time exists
+                if self.focusModeStartTime == nil {
+                    if let savedTime = UserDefaults.standard.object(forKey: "focusModeStartTime") as? Date {
+                        self.focusModeStartTime = savedTime
+                    } else {
+                        // Create new start time (emergency recovery)
+                        let now = Date()
+                        self.focusModeStartTime = now
+                        UserDefaults.standard.set(now, forKey: "focusModeStartTime")
+                    }
+                }
+                
+                // Ensure app blocking is applied
+                if !appBlockingActive {
+                    AppBlockingService.shared.activateFocusMode()
+                }
+                
+                // Restart timers if needed
+                if liveActivityTimer == nil {
+                    startLiveActivityTimer()
+                }
+            } else {
+                // If should be inactive, clear everything
+                self.focusModeStartTime = nil
+                UserDefaults.standard.removeObject(forKey: "focusModeStartTime")
+                
+                if appBlockingActive {
+                    AppBlockingService.shared.deactivateFocusMode()
+                }
+                
+                liveActivityTimer?.invalidate()
+                liveActivityTimer = nil
+            }
+            
+            // Force UI update
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
         }
     }
 }

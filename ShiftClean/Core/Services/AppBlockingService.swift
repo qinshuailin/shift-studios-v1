@@ -24,13 +24,26 @@ class AppBlockingService: ObservableObject {
         if let savedSelection = getSelectedApps() {
             self.selection = savedSelection
         }
+        
+        // CRITICAL: Restore app blocking state if focus mode was active
+        if isFocusModeActive() {
+            print("[AppBlockingService] Restoring app blocking state - focus mode was active")
+            if let savedSelection = getSelectedApps() {
+                applyAppRestrictions(savedSelection)
+                print("[AppBlockingService] Restored blocking for \(savedSelection.applicationTokens.count) apps")
+            } else {
+                print("[AppBlockingService] Focus mode active but no apps selected")
+            }
+        } else {
+            print("[AppBlockingService] Focus mode inactive, no blocking to restore")
+        }
     }
     
     // MARK: - Public Methods
     
     /// Checks if focus mode is currently active
     func isFocusModeActive() -> Bool {
-        return userDefaults.bool(forKey: focusModeKey)
+        return UserDefaults.standard.bool(forKey: "focusModeActive")
     }
     
     /// Toggles focus mode on/off and updates statistics
@@ -78,9 +91,9 @@ class AppBlockingService: ObservableObject {
         // Update the published property
         selection = newSelection
         
-        // Save the selection
+        // Save the selection using simple UserDefaults
         if let encodedData = try? JSONEncoder().encode(newSelection) {
-            userDefaults.set(encodedData, forKey: selectedAppsKey)
+            UserDefaults.standard.set(encodedData, forKey: selectedAppsKey)
         }
         
         // If focus mode is active, update the blocked apps
@@ -91,14 +104,14 @@ class AppBlockingService: ObservableObject {
     
     /// Retrieves the currently selected apps to block
     func getSelectedApps() -> FamilyActivitySelection? {
-        guard let data = userDefaults.data(forKey: selectedAppsKey) else { return nil }
+        guard let data = UserDefaults.standard.data(forKey: selectedAppsKey) else { return nil }
         return try? JSONDecoder().decode(FamilyActivitySelection.self, from: data)
     }
     
     // MARK: - Private Methods
     
     private func enableFocusMode() {
-        userDefaults.set(true, forKey: focusModeKey)
+        UserDefaults.standard.set(true, forKey: focusModeKey)
         // Apply app restrictions if apps are selected
         if let selection = getSelectedApps() {
             applyAppRestrictions(selection)
@@ -107,7 +120,7 @@ class AppBlockingService: ObservableObject {
     
     // Made public for state synchronization
     func disableFocusMode() {
-        userDefaults.set(false, forKey: focusModeKey)
+        UserDefaults.standard.set(false, forKey: focusModeKey)
         // Remove all app restrictions
         store.shield.applications = nil
     }

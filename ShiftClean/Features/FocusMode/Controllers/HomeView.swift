@@ -151,6 +151,9 @@ struct HomeView: View {
                     Divider()
                     // Edit Apps button
                     Button(action: {
+                        // Disable action when focus mode is active
+                        guard !statsManager.isFocusModeActive else { return }
+                        
                         Constants.Haptics.primaryButtonPress() // Same as Clock In/Out
                         editAppsPressed = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
@@ -163,16 +166,22 @@ struct HomeView: View {
                         HStack {
                             Text("Edit Apps")
                                 .font(.system(size: 40, weight: .light, design: .default))
+                                .foregroundColor(statsManager.isFocusModeActive ? .gray : .black)
                                 .padding(.leading, 20)
                             Spacer()
                         }
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity, minHeight: 56)
                         .contentShape(Rectangle())
-                        .background(editAppsPressed ? Color(red: 0.85, green: 0.85, blue: 0.85) : Color(red: 0.96, green: 0.94, blue: 0.91))
+                        .background(
+                            statsManager.isFocusModeActive ? 
+                            Color(red: 0.92, green: 0.92, blue: 0.92) : // Grayed out background when disabled
+                            (editAppsPressed ? Color(red: 0.85, green: 0.85, blue: 0.85) : Color(red: 0.96, green: 0.94, blue: 0.91))
+                        )
                         .animation(.easeInOut(duration: 0.15), value: editAppsPressed)
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .disabled(statsManager.isFocusModeActive)
                     Divider()
                     // Section 5
                     VStack(alignment: .leading, spacing: 8) {
@@ -215,6 +224,8 @@ struct HomeView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .background(Color.clear)
+                    
+
                 }
                 .padding(.top, 10)
                 .padding(.bottom, 10) // This controls the bottom space of the page
